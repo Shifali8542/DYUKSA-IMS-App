@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "DYUKSA IMS",
+    "slug": "dyuksa-ims",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A56DB"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dyuksa.ims"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#1A56DB"
+      },
+      "package": "com.dyuksa.ims"
+    },
+    "plugins": ["expo-secure-store"]
+  }
+}
