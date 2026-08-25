@@ -1,9 +1,11 @@
 // ── DYUKSA IMS — App Constants ────────────────────────────────────────────
 // Centralized: no screen hardcodes these values.
+// Status labels match backend model choices exactly.
 
 export const ORDER_STATUS_LABEL: Record<string, string> = {
-  pending:    'Pending',
+  draft:      'Draft',
   confirmed:  'Confirmed',
+  packed:     'Packed',
   dispatched: 'Dispatched',
   delivered:  'Delivered',
   cancelled:  'Cancelled',
@@ -11,24 +13,23 @@ export const ORDER_STATUS_LABEL: Record<string, string> = {
 
 export const PO_STATUS_LABEL: Record<string, string> = {
   draft:               'Draft',
-  confirmed:           'Confirmed',
+  approved:            'Approved',
+  sent:                'Sent',
   partially_received:  'Partial',
   received:            'Received',
   cancelled:           'Cancelled',
 };
 
 export const DISPATCH_STATUS_LABEL: Record<string, string> = {
-  pending:   'Pending',
-  packed:    'Packed',
-  shipped:   'Shipped',
-  delivered: 'Delivered',
-  returned:  'Returned',
+  pending:    'Pending',
+  approved:   'Approved',
+  dispatched: 'Dispatched',
+  delivered:  'Delivered',
+  returned:   'Returned',
 };
 
 export const TRANSFER_STATUS_LABEL: Record<string, string> = {
-  pending:   'Pending',
-  approved:  'Approved',
-  in_transit:'In Transit',
+  draft:     'Draft',
   completed: 'Completed',
   cancelled: 'Cancelled',
 };

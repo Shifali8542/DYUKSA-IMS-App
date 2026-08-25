@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import { styles } from './Orders.styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
-import { OrderApi } from '../../services/Api';
+import { useOrders, type OrderTab } from './hooks/useOrders';
 import Badge, { statusVariant } from '../../components/Badge/Badge';
 import SearchBar from '../../components/SearchBar/SearchBar';
 import Loader from '../../components/Loader/Loader';
@@ -15,43 +15,17 @@ import { ORDER_STATUS_LABEL, PO_STATUS_LABEL } from '../../constants';
 import type { SalesOrder, PurchaseOrder, MainStackParamList } from '../../types';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
-type Tab = 'sales' | 'purchase' | 'dispatch';
 
-const STATUS_FILTERS = ['all', 'pending', 'confirmed', 'dispatched', 'delivered', 'cancelled'];
+// Backend uses 'draft' not 'pending' for sales orders
+const STATUS_FILTERS = ['all', 'draft', 'confirmed', 'dispatched', 'delivered', 'cancelled'];
 
 export default function OrdersScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const nav = useNavigation<Nav>();
-
-  const [tab,        setTab]       = useState<Tab>('sales');
-  const [search,     setSearch]    = useState('');
-  const [status,     setStatus]    = useState('all');
-  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
-  const [poOrders,   setPoOrders]  = useState<PurchaseOrder[]>([]);
-  const [loading,    setLoading]   = useState(true);
-  const [refreshing, setRefreshing]= useState(false);
-  const [error,      setError]     = useState<string | null>(null);
-
-  const fetchOrders = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true); else setLoading(true);
-    setError(null);
-    try {
-      if (tab === 'sales') {
-        const res = await OrderApi.getSalesOrders({ status: status === 'all' ? undefined : status, search: search || undefined });
-        setSalesOrders(res.results ?? []);
-      } else if (tab === 'purchase') {
-        const res = await OrderApi.getPurchaseOrders({ status: status === 'all' ? undefined : status });
-        setPoOrders(res.results ?? []);
-      }
-    } catch (e: any) {
-      setError(e?.message ?? 'Failed to load orders');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [tab, search, status]);
-
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  const {
+    tab, changeTab, search, setSearch, status, setStatus,
+    salesOrders, poOrders, loading, refreshing, error, refresh, data,
+  } = useOrders();
 
   function SalesRow({ item }: { item: SalesOrder }) {
     return (
@@ -66,7 +40,9 @@ export default function OrdersScreen() {
         <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>{item.customer_name}</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs }}>
           <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>{item.warehouse_name}</Text>
-          <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>₹{item.total_amount}</Text>
+          <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>
+            ₹{item.total ?? item.subtotal ?? '—'}
+          </Text>
         </View>
         <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: 2 }}>
           {new Date(item.created_at).toLocaleDateString()}
@@ -85,36 +61,29 @@ export default function OrdersScreen() {
         <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>{item.supplier_name}</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs }}>
           <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>{new Date(item.created_at).toLocaleDateString()}</Text>
-          <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>₹{item.total_amount}</Text>
+          <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>₹{item.total}</Text>
         </View>
       </View>
     );
   }
 
-  const data = tab === 'sales' ? salesOrders : poOrders;
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1, padding: spacing.base }]}>
         <Text style={{ color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold }}>Orders</Text>
       </View>
 
       {/* Tabs */}
       <View style={[styles.tabs, { backgroundColor: colors.surface, paddingHorizontal: spacing.base, paddingBottom: spacing.sm }]}>
-        {(['sales', 'purchase'] as Tab[]).map((t) => (
+        {(['sales', 'purchase'] as OrderTab[]).map((t) => (
           <TouchableOpacity
             key={t}
-            onPress={() => { setTab(t); setStatus('all'); }}
-            style={[
-              styles.tabBtn,
-              {
-                borderBottomWidth: 2,
-                borderBottomColor: tab === t ? colors.primary : 'transparent',
-                paddingBottom: spacing.sm,
-                marginRight: spacing.lg,
-              },
-            ]}
+            onPress={() => changeTab(t)}
+            style={[styles.tabBtn, {
+              borderBottomWidth: 2,
+              borderBottomColor: tab === t ? colors.primary : 'transparent',
+              paddingBottom: spacing.sm, marginRight: spacing.lg,
+            }]}
           >
             <Text style={{ color: tab === t ? colors.primary : colors.textSecondary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>
               {t === 'sales' ? 'Sales Orders' : 'Purchase Orders'}
@@ -123,7 +92,6 @@ export default function OrdersScreen() {
         ))}
       </View>
 
-      {/* Search */}
       <View style={{ padding: spacing.base, backgroundColor: colors.surface }}>
         <SearchBar value={search} onChangeText={setSearch} placeholder={`Search ${tab} orders...`} />
       </View>
@@ -154,17 +122,30 @@ export default function OrdersScreen() {
       {loading ? (
         <Loader fullScreen />
       ) : error ? (
-        <ErrorState message={error} onRetry={fetchOrders} />
+        <ErrorState message={error} onRetry={refresh} />
       ) : (
         <FlatList
           data={data as any[]}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => tab === 'sales' ? <SalesRow item={item} /> : <PoRow item={item} />}
           contentContainerStyle={{ padding: spacing.base, flexGrow: 1 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchOrders(true)} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
           ListEmptyComponent={<EmptyState icon="📋" title="No orders found" description="No orders match your filters." />}
         />
       )}
+      {/* FAB — Create Order */}
+      <TouchableOpacity
+        onPress={() => nav.navigate('OrderForm')}
+        style={{
+          position: 'absolute', bottom: 24, right: spacing.base,
+          width: 56, height: 56, borderRadius: 28,
+          backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+          shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+        }}
+      >
+        <Text style={{ color: colors.textInverse, fontSize: 28, fontWeight: '300', marginTop: -2 }}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }

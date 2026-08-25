@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DashboardApi, InventoryApi } from '../../../services/Api';
+import { DashboardApi, ProductApi } from '../../../api/api';
 import { tokenStorage } from '../../../utils/tokenStorage';
 import { getUserDisplayName } from '../../../utils/jwt';
 import type { DashboardData, Product } from '../../../types';
@@ -24,14 +24,22 @@ export function useHome(): HomeState {
     setLoading(true);
     setError(null);
     try {
-      const [dash, lowStockRes, token] = await Promise.all([
+      const [dash, token] = await Promise.all([
         DashboardApi.getSummary(),
-        InventoryApi.getLowStock(),
         tokenStorage.getAccessToken(),
       ]);
       setDashboard(dash);
-      setLowStock(Array.isArray(lowStockRes) ? lowStockRes.slice(0, 5) : []);
       if (token) setUserName(getUserDisplayName(token));
+
+      // Fetch low stock products separately (won't block dashboard)
+      try {
+        const lowStockRes = await ProductApi.getProducts({ is_active: true, page_size: 5 } as any);
+        // Filter for low stock items if backend returns the flag
+        const items = lowStockRes.results ?? [];
+        setLowStock(items.filter((p) => parseFloat(p.available_stock ?? '0') <= parseFloat(p.reorder_level ?? '0')).slice(0, 5));
+      } catch {
+        setLowStock([]);
+      }
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load dashboard');
     } finally {

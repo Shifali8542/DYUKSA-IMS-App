@@ -1,31 +1,28 @@
-// ── DYUKSA IMS Mobile — Centralized API Service ───────────────────────────
-// All API calls go through this file. Screens never call axios directly.
-// Architecture: Screen → Hook → Api.ts → Django Backend
-
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from '../utils/tokenStorage';
 import type {
-  LoginResponse, RefreshResponse, AuthTokens,
-  DashboardData, Product, InventoryBalance, Warehouse,
-  SalesOrder, PurchaseOrder, DispatchNote, Notification,
-  StockTransfer, Supplier, Customer, Category,
+  LoginResponse, RefreshResponse,
+  DashboardData, Product, ProductCreatePayload,
+  InventoryBalance, ProductStockResponse,
+  StockAdjustmentPayload, StockAdjustmentResponse,
+  Warehouse, SalesOrder, CreateOrderPayload,
+  PurchaseOrder, DispatchNote, Notification,
+  Supplier, Customer, CustomerCreatePayload,
+  Category, Brand, Unit,
   PaginatedResponse, IMSResponse, User,
 } from '../types';
 
 // ── Base URLs — from environment
-// In production set these via .env / EAS secrets
 const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'http://192.168.1.17:8001';
 const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL || 'http://192.168.1.15:8000';
 
-// ── Axios instances 
-// centralClient → Dyuksa Central (auth only)
+// ── Axios instances
 export const centralClient = axios.create({
   baseURL: CENTRAL_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
 });
 
-// imsClient → DYUKSA IMS Django backend
 export const imsClient = axios.create({
   baseURL: IMS_URL,
   headers: { 'Content-Type': 'application/json' },
@@ -106,7 +103,7 @@ export const AuthApi = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DASHBOARD API
+// DASHBOARD API — /api/v1/reports/
 // ═══════════════════════════════════════════════════════════════════════════
 export const DashboardApi = {
   getSummary: async (): Promise<DashboardData> => {
@@ -117,35 +114,56 @@ export const DashboardApi = {
     const { data } = await imsClient.get('/api/v1/reports/sales/', { params });
     return data.data;
   },
-  getInventoryReport: async () => {
-    const { data } = await imsClient.get('/api/v1/reports/inventory/');
+  getInventoryReport: async (params?: { warehouse?: number; category?: number; low_stock?: boolean }) => {
+    const { data } = await imsClient.get('/api/v1/reports/inventory/', { params });
     return data.data;
   },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// INVENTORY / PRODUCTS API
+// PRODUCT API — /api/v1/products/
 // ═══════════════════════════════════════════════════════════════════════════
-export const InventoryApi = {
+export const ProductApi = {
   getProducts: async (params?: {
-    search?: string; category?: number; warehouse?: number;
-    is_active?: boolean; low_stock?: boolean; page?: number;
+    search?: string; category?: number; brand?: number;
+    is_active?: boolean; page?: number; page_size?: number;
   }): Promise<PaginatedResponse<Product>> => {
     const { data } = await imsClient.get('/api/v1/products/', { params });
     return data;
   },
 
   getProduct: async (id: number): Promise<Product> => {
-    const { data } = await imsClient.get<IMSResponse<Product>>(`/api/v1/inventory/products/${id}/`);
-    return data.data;
+    const { data } = await imsClient.get(`/api/v1/products/${id}/`);
+    return data.data ?? data;
   },
 
-  getLowStock: async (): Promise<Product[]> => {
-    const { data } = await imsClient.get('/api/v1/products/', {
-      params: { low_stock: true, page_size: 5 }
-    });
-    return data.results ?? data.data ?? [];
+  getProductStock: async (id: number): Promise<ProductStockResponse> => {
+    const { data } = await imsClient.get(`/api/v1/products/${id}/stock/`);
+    return data.data ?? data;
   },
+
+  createProduct: async (payload: ProductCreatePayload): Promise<Product> => {
+    const { data } = await imsClient.post('/api/v1/products/', payload);
+    return data.data ?? data;
+  },
+
+  updateProduct: async (id: number, payload: Partial<ProductCreatePayload>): Promise<Product> => {
+    const { data } = await imsClient.patch(`/api/v1/products/${id}/`, payload);
+    return data.data ?? data;
+  },
+
+    deleteProduct: async (id: number): Promise<void> => {
+    await imsClient.delete(`/api/v1/products/${id}/`).catch((e) => {
+      if (e?.response?.status === 204) return;
+      throw e;
+    });
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INVENTORY API — /api/v1/inventory/
+// ═══════════════════════════════════════════════════════════════════════════
+export const InventoryApi = {
   getStockLevels: async (params?: {
     product?: number; warehouse?: number; page?: number;
   }): Promise<PaginatedResponse<InventoryBalance>> => {
@@ -153,19 +171,72 @@ export const InventoryApi = {
     return data;
   },
 
-  getValuation: async () => {
-    const { data } = await imsClient.get('/api/v1/inventory/products/valuation/');
-    return data.data;
+  getLowStock: async (): Promise<PaginatedResponse<InventoryBalance>> => {
+    const { data } = await imsClient.get('/api/v1/inventory/low-stock/');
+    return data;
   },
 
-  getCategories: async (): Promise<Category[]> => {
-    const { data } = await imsClient.get('/api/v1/inventory/categories/');
-    return data.results ?? data.data ?? data;
+  getValuation: async () => {
+    const { data } = await imsClient.get('/api/v1/inventory/valuation/');
+    return data.data ?? data;
+  },
+
+  // Payload matches backend StockAdjustmentView exactly
+  adjustStock: async (payload: StockAdjustmentPayload): Promise<StockAdjustmentResponse> => {
+    const { data } = await imsClient.post('/api/v1/inventory/adjust/', payload);
+    return data.data ?? data;
   },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// WAREHOUSE API
+// CATEGORY API — /api/v1/categories/
+// ═══════════════════════════════════════════════════════════════════════════
+export const CategoryApi = {
+  getCategories: async (): Promise<Category[]> => {
+    const { data } = await imsClient.get('/api/v1/categories/');
+    return data.results ?? data.data ?? data;
+  },
+
+      createCategory: async (payload: { name: string; parent?: number }): Promise<Category> => {
+    const base = payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const slug = `${base}-${Date.now().toString(36)}`;
+    const { data } = await imsClient.post('/api/v1/categories/', { ...payload, slug });
+    return data.data ?? data;
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BRAND API — /api/v1/brands/
+// ═══════════════════════════════════════════════════════════════════════════
+export const BrandApi = {
+  getBrands: async (): Promise<Brand[]> => {
+    const { data } = await imsClient.get('/api/v1/brands/');
+    return data.results ?? data.data ?? data;
+  },
+
+  createBrand: async (payload: { name: string }): Promise<Brand> => {
+    const { data } = await imsClient.post('/api/v1/brands/', payload);
+    return data.data ?? data;
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UNIT API — /api/v1/units/
+// ═══════════════════════════════════════════════════════════════════════════
+export const UnitApi = {
+  getUnits: async (): Promise<Unit[]> => {
+    const { data } = await imsClient.get('/api/v1/units/');
+    return data.results ?? data.data ?? data;
+  },
+
+    createUnit: async (payload: { name: string; symbol: string }): Promise<Unit> => {
+    const { data } = await imsClient.post('/api/v1/units/', { ...payload, decimal_places: 0 });
+    return data.data ?? data;
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WAREHOUSE API — /api/v1/warehouses/
 // ═══════════════════════════════════════════════════════════════════════════
 export const WarehouseApi = {
   getWarehouses: async (params?: { search?: string; is_active?: boolean }): Promise<Warehouse[]> => {
@@ -174,25 +245,13 @@ export const WarehouseApi = {
   },
 
   getWarehouse: async (id: number): Promise<Warehouse> => {
-    const { data } = await imsClient.get<IMSResponse<Warehouse>>(`/api/v1/warehouses/${id}/`);
-    return data.data;
-  },
-
-  getWarehouseInventory: async (id: number): Promise<InventoryBalance[]> => {
-    const { data } = await imsClient.get(`/api/v1/warehouses/${id}/inventory/`);
-    return data.data ?? data.results ?? data;
-  },
-
-  receiveStock: async (warehouseId: number, payload: {
-    product_id: number; quantity: number; reference?: string; notes?: string;
-  }) => {
-    const { data } = await imsClient.post(`/api/v1/warehouses/${warehouseId}/receive-stock/`, payload);
-    return data.data;
+    const { data } = await imsClient.get(`/api/v1/warehouses/${id}/`);
+    return data.data ?? data;
   },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ORDERS API
+// ORDERS API — /api/v1/orders/
 // ═══════════════════════════════════════════════════════════════════════════
 export const OrderApi = {
   getSalesOrders: async (params?: {
@@ -204,13 +263,24 @@ export const OrderApi = {
   },
 
   getSalesOrder: async (id: number): Promise<SalesOrder> => {
-    const { data } = await imsClient.get<IMSResponse<SalesOrder>>(`/api/v1/orders/${id}/`);
-    return data.data;
+    const { data } = await imsClient.get(`/api/v1/orders/${id}/`);
+    return data.data ?? data;
   },
 
-  transitionOrder: async (id: number, status: string, reason?: string) => {
-    const { data } = await imsClient.post(`/api/v1/orders/${id}/transition/`, { status, reason });
-    return data.data;
+  // Matches backend CreateOrderSerializer
+  createOrder: async (payload: CreateOrderPayload): Promise<SalesOrder> => {
+    const { data } = await imsClient.post('/api/v1/orders/', payload);
+    return data.data ?? data;
+  },
+
+  confirmOrder: async (id: number): Promise<SalesOrder> => {
+    const { data } = await imsClient.post(`/api/v1/orders/${id}/confirm/`);
+    return data.data ?? data;
+  },
+
+  cancelOrder: async (id: number, reason?: string): Promise<SalesOrder> => {
+    const { data } = await imsClient.post(`/api/v1/orders/${id}/cancel/`, { reason });
+    return data.data ?? data;
   },
 
   getPurchaseOrders: async (params?: {
@@ -221,42 +291,22 @@ export const OrderApi = {
   },
 
   getPurchaseOrder: async (id: number): Promise<PurchaseOrder> => {
-    const { data } = await imsClient.get<IMSResponse<PurchaseOrder>>(`/api/v1/purchase-orders/${id}/`);
-    return data.data;
-  },
-
-  transitionPO: async (id: number, status: string) => {
-    const { data } = await imsClient.post(`/api/v1/purchase-orders/${id}/transition/`, { status });
-    return data.data;
-  },
-
-  receiveStockPO: async (id: number, items: { item_id: number; received_quantity: number }[]) => {
-    const { data } = await imsClient.post(`/api/v1/purchase-orders/${id}/receive/`, { items });
-    return data.data;
+    const { data } = await imsClient.get(`/api/v1/purchase-orders/${id}/`);
+    return data.data ?? data;
   },
 
   getDispatchNotes: async (params?: { status?: string; page?: number }): Promise<PaginatedResponse<DispatchNote>> => {
     const { data } = await imsClient.get('/api/v1/dispatch/', { params });
     return data;
   },
-
-  transitionDispatch: async (id: number, status: string) => {
-    const { data } = await imsClient.post(`/api/v1/dispatch/${id}/transition/`, { status });
-    return data.data;
-  },
-
-  getStockTransfers: async (params?: { status?: string; page?: number }): Promise<PaginatedResponse<StockTransfer>> => {
-    const { data } = await imsClient.get('/api/v1/warehouses/transfers/', { params });
-    return data;
-  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// NOTIFICATIONS API
+// NOTIFICATIONS API — /api/v1/notifications/
 // ═══════════════════════════════════════════════════════════════════════════
 export const NotificationApi = {
   getNotifications: async (params?: {
-    unread?: boolean; page?: number;
+    status?: string; page?: number;
   }): Promise<PaginatedResponse<Notification>> => {
     const { data } = await imsClient.get('/api/v1/notifications/', { params });
     return data;
@@ -265,19 +315,19 @@ export const NotificationApi = {
   getUnreadCount: async (): Promise<number> => {
     try {
       const { data } = await imsClient.get('/api/v1/notifications/', {
-        params: { unread: true, page_size: 1 },
+        params: { status: 'pending', page_size: 1 },
       });
       return data.count ?? 0;
     } catch { return 0; }
   },
 
-  markRead: async (ids: number[]): Promise<void> => {
-    await imsClient.post('/api/v1/notifications/mark-read/', { ids });
+  markRead: async (ids?: number[]): Promise<void> => {
+    await imsClient.post('/api/v1/notifications/mark-read/', ids?.length ? { ids } : {});
   },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SUPPLIER / CUSTOMER API
+// SUPPLIER API — /api/v1/suppliers/
 // ═══════════════════════════════════════════════════════════════════════════
 export const SupplierApi = {
   getSuppliers: async (params?: { search?: string }): Promise<PaginatedResponse<Supplier>> => {
@@ -286,10 +336,28 @@ export const SupplierApi = {
   },
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CUSTOMER API — /api/v1/customers/
+// ═══════════════════════════════════════════════════════════════════════════
 export const CustomerApi = {
   getCustomers: async (params?: { search?: string }): Promise<PaginatedResponse<Customer>> => {
-    const { data } = await imsClient.get('/api/v1/orders/customers/', { params });
+    const { data } = await imsClient.get('/api/v1/customers/', { params });
     return data;
+  },
+
+  getCustomer: async (id: number): Promise<Customer> => {
+    const { data } = await imsClient.get(`/api/v1/customers/${id}/`);
+    return data.data ?? data;
+  },
+
+  createCustomer: async (payload: CustomerCreatePayload): Promise<Customer> => {
+    const { data } = await imsClient.post('/api/v1/customers/', payload);
+    return data.data ?? data;
+  },
+
+  updateCustomer: async (id: number, payload: Partial<CustomerCreatePayload>): Promise<Customer> => {
+    const { data } = await imsClient.patch(`/api/v1/customers/${id}/`, payload);
+    return data.data ?? data;
   },
 };
 
@@ -303,6 +371,6 @@ export const UserApi = {
   },
   getSettings: async () => {
     const { data } = await imsClient.get('/api/v1/settings/');
-    return data.data;
+    return data.data ?? data;
   },
 };

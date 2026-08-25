@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { lightColors, darkColors, type AppColors } from './colors';
 import { spacing, borderRadius, iconSize } from './spacing';
 import { fontSize, fontWeight, textStyles } from './fonts';
+import { STORAGE_KEYS } from '../constants';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -23,7 +25,21 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemScheme = useColorScheme();
-  const [mode, setMode] = useState<ThemeMode>('light');
+  const [mode, setModeState] = useState<ThemeMode>('light');
+
+  // Load persisted theme on mount
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEYS.THEME_MODE).then((saved) => {
+      if (saved === 'light' || saved === 'dark' || saved === 'system') {
+        setModeState(saved);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const setMode = useCallback((m: ThemeMode) => {
+    setModeState(m);
+    AsyncStorage.setItem(STORAGE_KEYS.THEME_MODE, m).catch(() => {});
+  }, []);
 
   const isDark =
     mode === 'dark' ? true :
@@ -42,13 +58,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     textStyles,
     isDark,
     mode,
-    setMode: useCallback((m: ThemeMode) => setMode(m), []),
+    setMode,
   };
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
-// ── useTheme hook — every screen and component uses this ─────────────────
 export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider');

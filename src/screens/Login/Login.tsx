@@ -7,7 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
 import Input from '../../components/Input/Input';
 import Button from '../../components/Button/Button';
-import { AuthApi } from '../../services/Api';
+import { AuthApi } from '../../api/api';
 import { tokenStorage } from '../../utils/tokenStorage';
 import type { AuthStackParamList } from '../../types';
 

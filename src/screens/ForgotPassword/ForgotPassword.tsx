@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import Input from '../../components/Input/Input';
 import Button from '../../components/Button/Button';
-import { AuthApi } from '../../services/Api';
+import { AuthApi } from '../../api/api';
 
 type Step = 'email' | 'otp' | 'password';
 

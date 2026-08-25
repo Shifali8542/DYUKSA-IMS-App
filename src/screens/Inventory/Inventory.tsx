@@ -33,11 +33,11 @@ export default function InventoryScreen() {
           styles.row,
           {
             backgroundColor: colors.surface,
-            borderRadius:    borderRadius.md,
-            padding:         spacing.base,
-            marginBottom:    spacing.sm,
-            borderColor:     colors.border,
-            borderWidth:     1,
+            borderRadius: borderRadius.md,
+            padding: spacing.base,
+            marginBottom: spacing.sm,
+            borderColor: colors.border,
+            borderWidth: 1,
           },
         ]}
       >
@@ -55,18 +55,18 @@ export default function InventoryScreen() {
           )}
         </View>
         <View style={styles.rowRight}>
-          <Text style={[styles.stock, { color: item.is_low_stock ? colors.danger : colors.success, fontSize: fontSize.lg, fontWeight: fontWeight.bold }]}>
-            {item.total_stock}
+          <Text style={[styles.stock, { color: parseFloat(item.available_stock ?? '0') <= parseFloat(item.reorder_level ?? '0') ? colors.danger : colors.success, fontSize: fontSize.lg, fontWeight: fontWeight.bold }]}>
+            {item.available_stock ?? '0'}
           </Text>
           <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>units</Text>
-          {item.is_low_stock && <Badge label="Low" variant="danger" />}
+          {parseFloat(item.available_stock ?? '0') <= parseFloat(item.reorder_level ?? '0') && <Badge label="Low" variant="danger" />}
         </View>
       </TouchableOpacity>
     );
   }
 
   if (loading && products.length === 0) return <Loader fullScreen message="Loading inventory..." />;
-  if (error && products.length === 0)   return <ErrorState message={error} onRetry={refresh} />;
+  if (error && products.length === 0) return <ErrorState message={error} onRetry={refresh} />;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
@@ -100,12 +100,12 @@ export default function InventoryScreen() {
                     styles.chip,
                     {
                       backgroundColor: active ? colors.primary : colors.surface,
-                      borderColor:     active ? colors.primary : colors.border,
-                      borderRadius:    borderRadius.full,
+                      borderColor: active ? colors.primary : colors.border,
+                      borderRadius: borderRadius.full,
                       paddingHorizontal: spacing.base,
-                      paddingVertical:   spacing.xs,
-                      marginRight:       spacing.xs,
-                      borderWidth:       1,
+                      paddingVertical: spacing.xs,
+                      marginRight: spacing.xs,
+                      borderWidth: 1,
                     },
                   ]}
                 >
@@ -137,6 +137,19 @@ export default function InventoryScreen() {
         }
         ListFooterComponent={hasMore ? <Loader /> : null}
       />
+      {/* FAB — Add Product */}
+      <TouchableOpacity
+        onPress={() => nav.navigate('ProductForm', {})}
+        style={{
+          position: 'absolute', bottom: 24, right: spacing.base,
+          width: 56, height: 56, borderRadius: 28,
+          backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+          shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+        }}
+      >
+        <Text style={{ color: colors.textInverse, fontSize: 28, fontWeight: '300', marginTop: -2 }}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }

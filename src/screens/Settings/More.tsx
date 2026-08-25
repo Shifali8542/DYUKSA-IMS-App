@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
-import { AuthApi } from '../../services/Api';
+import { AuthApi } from '../../api/api';
 import { tokenStorage } from '../../utils/tokenStorage';
 import type { MainStackParamList } from '../../types';
 
@@ -13,9 +13,10 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 interface Props { onLogout: () => void; }
 
 const MENU_ITEMS = [
-  { label: 'My Profile',    icon: '👤', screen: 'Profile'   },
-  { label: 'Warehouses',    icon: '🏭', screen: 'Warehouses'},
-  { label: 'Settings',      icon: '⚙️', screen: 'Settings'  },
+  { label: 'My Profile', icon: '👤', screen: 'Profile' },
+  { label: 'Customers', icon: '👥', screen: 'Customers' },
+  { label: 'Warehouses', icon: '🏭', screen: 'Warehouses' },
+  { label: 'Settings', icon: '⚙️', screen: 'Settings' },
 ];
 
 export default function MoreScreen({ onLogout }: Props) {
@@ -33,7 +34,7 @@ export default function MoreScreen({ onLogout }: Props) {
           setLoggingOut(true);
           try {
             const refresh = await tokenStorage.getRefreshToken();
-            if (refresh) await AuthApi.logout(refresh).catch(() => {});
+            if (refresh) await AuthApi.logout(refresh).catch(() => { });
           } finally {
             await tokenStorage.clear();
             onLogout();
@@ -73,7 +74,6 @@ export default function MoreScreen({ onLogout }: Props) {
           ))}
         </View>
 
-        {/* Logout */}
         <TouchableOpacity
           onPress={handleLogout}
           disabled={loggingOut}
@@ -81,10 +81,10 @@ export default function MoreScreen({ onLogout }: Props) {
             styles.logoutBtn,
             {
               backgroundColor: colors.dangerLight,
-              borderRadius:    borderRadius.lg,
-              padding:         spacing.base,
-              marginTop:       spacing.base,
-              opacity:         loggingOut ? 0.5 : 1,
+              borderRadius: borderRadius.lg,
+              padding: spacing.base,
+              marginTop: spacing.base,
+              opacity: loggingOut ? 0.5 : 1,
             },
           ]}
         >

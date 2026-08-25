@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import React from 'react';
+import { View, Text, FlatList, RefreshControl } from 'react-native';
 import { styles } from './Notifications.styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
-import { NotificationApi } from '../../services/Api';
+import { useNotifications } from './hooks/useNotifications';
 import Loader from '../../components/Loader/Loader';
 import EmptyState from '../../components/EmptyState/EmptyState';
 import ErrorState from '../../components/ErrorState/ErrorState';
@@ -23,35 +23,10 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function NotificationsScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading,       setLoading]       = useState(true);
-  const [refreshing,    setRefreshing]    = useState(false);
-  const [error,         setError]         = useState<string | null>(null);
-  const [markingAll,    setMarkingAll]    = useState(false);
-
-  const fetchNotifications = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true); else setLoading(true);
-    try {
-      const res = await NotificationApi.getNotifications();
-      setNotifications(res.results ?? []);
-    } catch (e: any) {
-      setError(e?.message ?? 'Failed to load notifications');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchNotifications(); }, []);
-
-  async function markAllRead() {
-    setMarkingAll(true);
-    try {
-      await NotificationApi.markRead([]);
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    } catch {}
-    finally { setMarkingAll(false); }
-  }
+  const {
+    notifications, loading, refreshing, error,
+    markingAll, markAllRead, unreadCount, refresh,
+  } = useNotifications();
 
   function getTimeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -65,16 +40,17 @@ export default function NotificationsScreen() {
 
   function renderItem({ item }: { item: Notification }) {
     const icon = TYPE_ICONS[item.notification_type] ?? 'ℹ️';
+    const isRead = item.status === 'read';
     return (
       <View style={[
         styles.item,
         {
-          backgroundColor: item.is_read ? colors.surface : colors.primaryLight,
+          backgroundColor: isRead ? colors.surface : colors.primaryLight,
           borderRadius:    borderRadius.md,
           padding:         spacing.base,
           marginBottom:    spacing.sm,
           borderLeftWidth: 4,
-          borderLeftColor: item.is_read ? colors.border : colors.primary,
+          borderLeftColor: isRead ? colors.border : colors.primary,
         },
       ]}>
         <View style={styles.itemRow}>
@@ -88,6 +64,11 @@ export default function NotificationsScreen() {
                 {getTimeAgo(item.created_at)}
               </Text>
             </View>
+            {item.subject && (
+              <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, marginBottom: 2 }}>
+                {item.subject}
+              </Text>
+            )}
             <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, lineHeight: 20 }}>{item.message}</Text>
           </View>
         </View>
@@ -95,10 +76,8 @@ export default function NotificationsScreen() {
     );
   }
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
   if (loading) return <Loader fullScreen />;
-  if (error)   return <ErrorState message={error} onRetry={fetchNotifications} />;
+  if (error)   return <ErrorState message={error} onRetry={refresh} />;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
@@ -119,7 +98,7 @@ export default function NotificationsScreen() {
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         contentContainerStyle={{ padding: spacing.base, flexGrow: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchNotifications(true)} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
         ListEmptyComponent={<EmptyState icon="🔔" title="No notifications" description="You're all caught up!" />}
       />
     </SafeAreaView>

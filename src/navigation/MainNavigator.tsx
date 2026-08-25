@@ -3,7 +3,9 @@ import { View, Text, TouchableOpacity, Animated, Dimensions, Pressable, StyleShe
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
+import { DrawerContext } from './DrawerContext';
 
 import HomeScreen from '../screens/Home/Home';
 import InventoryScreen from '../screens/Inventory/Inventory';
@@ -11,12 +13,15 @@ import OrdersScreen from '../screens/Orders/Orders';
 import NotificationsScreen from '../screens/Notifications/Notifications';
 import MoreScreen from '../screens/Settings/More';
 import ProductDetailsScreen from '../screens/ProductDetails/ProductDetails';
+import ProductFormScreen from '../screens/ProductForm/ProductForm';
 import OrderDetailScreen from '../screens/OrderDetail/OrderDetail';
+import OrderFormScreen from '../screens/OrderForm/OrderForm';
 import WarehousesScreen from '../screens/Warehouses/Warehouses';
 import ProfileScreen from '../screens/Profile/Profile';
 import SettingsScreen from '../screens/Settings/Settings';
+import CustomersScreen from '../screens/Customers/Customers';
+import CustomerFormScreen from '../screens/CustomerForm/CustomerForm';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = 280;
 
 const Tab = createBottomTabNavigator();
@@ -33,26 +38,84 @@ const TAB_ICONS: Record<string, string> = {
 interface Props { onLogout: () => void; }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CUSTOM DRAWER — Pure Animated, no external library
+// CUSTOM DRAWER — uses useNavigation from React Navigation
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface DrawerContextType {
-  openDrawer: () => void;
-  closeDrawer: () => void;
-}
+function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onLogout: () => void }) {
+  const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
 
-const DrawerContext = React.createContext<DrawerContextType>({
-  openDrawer: () => {},
-  closeDrawer: () => {},
-});
+  function navigateTo(screen: string, params?: Record<string, any>) {
+    closeDrawer();
+    setTimeout(() => {
+      try {
+        navigation.navigate(screen, params);
+      } catch {}
+    }, 150);
+  }
 
-export function useDrawer() {
-  return React.useContext(DrawerContext);
+  const menuItems = [
+    { label: 'Home',          icon: '🏠', onPress: () => navigateTo('MainTabs', { screen: 'Home' }) },
+    { label: 'Inventory',     icon: '📦', onPress: () => navigateTo('MainTabs', { screen: 'Inventory' }) },
+    { label: 'Orders',        icon: '📋', onPress: () => navigateTo('MainTabs', { screen: 'Orders' }) },
+    { label: 'Warehouses',    icon: '🏭', onPress: () => navigateTo('Warehouses') },
+    { label: 'Customers',     icon: '👥', onPress: () => navigateTo('Customers') },
+    { label: 'Notifications', icon: '🔔', onPress: () => navigateTo('MainTabs', { screen: 'Alerts' }) },
+    { label: 'My Profile',    icon: '👤', onPress: () => navigateTo('Profile') },
+    { label: 'Settings',      icon: '⚙️', onPress: () => navigateTo('Settings') },
+  ];
+
+  return (
+    <View style={{ paddingTop: insets.top + 16, flex: 1 }}>
+      {/* Header */}
+      <View style={[s.drawerHeader, { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
+        <View style={[s.logoBox, { backgroundColor: colors.primary, borderRadius: borderRadius.md }]}>
+          <Text style={s.logoText}>D</Text>
+        </View>
+        <View style={{ marginLeft: spacing.base }}>
+          <Text style={{ color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold }}>
+            DYUKSA IMS
+          </Text>
+          <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>
+            Inventory Management
+          </Text>
+        </View>
+      </View>
+
+      {/* Menu Items */}
+      <View style={{ marginTop: spacing.sm }}>
+        {menuItems.map((item) => (
+          <TouchableOpacity
+            key={item.label}
+            onPress={item.onPress}
+            style={[s.menuItem, { paddingVertical: spacing.md, paddingHorizontal: spacing.lg }]}
+          >
+            <Text style={{ fontSize: 20, marginRight: spacing.base, width: 28 }}>{item.icon}</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: fontSize.base, fontWeight: fontWeight.medium }}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Divider + Logout */}
+      <View style={[s.divider, { borderTopColor: colors.border, marginTop: spacing.lg }]} />
+      <TouchableOpacity
+        onPress={() => { closeDrawer(); onLogout(); }}
+        style={[s.menuItem, { paddingVertical: spacing.md, paddingHorizontal: spacing.lg }]}
+      >
+        <Text style={{ fontSize: 20, marginRight: spacing.base, width: 28 }}>🚪</Text>
+        <Text style={{ color: colors.danger, fontSize: fontSize.base, fontWeight: fontWeight.semibold }}>
+          Sign Out
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 function CustomDrawer({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
-  const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
-  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -72,35 +135,19 @@ function CustomDrawer({ children, onLogout }: { children: React.ReactNode; onLog
     ]).start(() => setIsOpen(false));
   }
 
-  const menuItems = [
-    { label: 'Home',          icon: '🏠' },
-    { label: 'Inventory',     icon: '📦' },
-    { label: 'Orders',        icon: '📋' },
-    { label: 'Warehouses',    icon: '🏭' },
-    { label: 'Notifications', icon: '🔔' },
-    { label: 'My Profile',    icon: '👤' },
-    { label: 'Settings',      icon: '⚙️' },
-  ];
-
   return (
     <DrawerContext.Provider value={{ openDrawer, closeDrawer }}>
       <View style={{ flex: 1 }}>
-        {/* Main Content */}
         {children}
 
-        {/* Overlay */}
         {isOpen && (
           <Animated.View
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: 'rgba(0,0,0,0.5)', opacity: overlayOpacity },
-            ]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', opacity: overlayOpacity }]}
           >
             <Pressable style={StyleSheet.absoluteFill} onPress={closeDrawer} />
           </Animated.View>
         )}
 
-        {/* Drawer Panel */}
         <Animated.View
           style={[
             s.drawerPanel,
@@ -108,7 +155,6 @@ function CustomDrawer({ children, onLogout }: { children: React.ReactNode; onLog
               width: DRAWER_WIDTH,
               backgroundColor: colors.surface,
               transform: [{ translateX }],
-              paddingTop: insets.top + 16,
               shadowColor: '#000',
               shadowOffset: { width: 2, height: 0 },
               shadowOpacity: 0.25,
@@ -117,48 +163,7 @@ function CustomDrawer({ children, onLogout }: { children: React.ReactNode; onLog
             },
           ]}
         >
-          {/* Drawer Header */}
-          <View style={[s.drawerHeader, { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
-            <View style={[s.logoBox, { backgroundColor: colors.primary, borderRadius: borderRadius.md }]}>
-              <Text style={s.logoText}>D</Text>
-            </View>
-            <View style={{ marginLeft: spacing.base }}>
-              <Text style={{ color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold }}>
-                DYUKSA IMS
-              </Text>
-              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>
-                Inventory Management
-              </Text>
-            </View>
-          </View>
-
-          {/* Menu Items */}
-          <View style={{ marginTop: spacing.sm }}>
-            {menuItems.map((item) => (
-              <TouchableOpacity
-                key={item.label}
-                onPress={() => closeDrawer()}
-                style={[s.menuItem, { paddingVertical: spacing.md, paddingHorizontal: spacing.lg }]}
-              >
-                <Text style={{ fontSize: 20, marginRight: spacing.base, width: 28 }}>{item.icon}</Text>
-                <Text style={{ color: colors.textPrimary, fontSize: fontSize.base, fontWeight: fontWeight.medium }}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Divider + Logout */}
-          <View style={[s.divider, { borderTopColor: colors.border, marginTop: spacing.lg }]} />
-          <TouchableOpacity
-            onPress={() => { closeDrawer(); onLogout(); }}
-            style={[s.menuItem, { paddingVertical: spacing.md, paddingHorizontal: spacing.lg }]}
-          >
-            <Text style={{ fontSize: 20, marginRight: spacing.base, width: 28 }}>🚪</Text>
-            <Text style={{ color: colors.danger, fontSize: fontSize.base, fontWeight: fontWeight.semibold }}>
-              Sign Out
-            </Text>
-          </TouchableOpacity>
+          <DrawerContent closeDrawer={closeDrawer} onLogout={onLogout} />
         </Animated.View>
       </View>
     </DrawerContext.Provider>
@@ -171,6 +176,7 @@ function CustomDrawer({ children, onLogout }: { children: React.ReactNode; onLog
 
 function TabNavigator({ onLogout }: Props) {
   const { colors, fontSize } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -187,9 +193,9 @@ function TabNavigator({ onLogout }: Props) {
           backgroundColor: colors.tabBar,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 1,
-          paddingBottom: 20,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
-          height: 80,
+          height: 56 + Math.max(insets.bottom, 8),
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
@@ -216,7 +222,7 @@ function TabNavigator({ onLogout }: Props) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIN NAVIGATOR — Stack + Custom Drawer
+// MAIN STACK — all routes registered here
 // ═══════════════════════════════════════════════════════════════════════════
 
 function MainStack({ onLogout }: Props) {
@@ -228,15 +234,29 @@ function MainStack({ onLogout }: Props) {
       <Stack.Screen name="ProductDetails" options={{ headerShown: true, title: 'Product Details' }}>
         {(props: any) => <ProductDetailsScreen {...props} />}
       </Stack.Screen>
+      <Stack.Screen name="ProductForm" options={{ headerShown: true, title: 'Add Product' }}>
+        {(props: any) => <ProductFormScreen {...props} />}
+      </Stack.Screen>
       <Stack.Screen name="OrderDetail" options={{ headerShown: true, title: 'Order Detail' }}>
         {(props: any) => <OrderDetailScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="OrderForm" options={{ headerShown: true, title: 'Create Order' }}>
+        {(props: any) => <OrderFormScreen {...props} />}
       </Stack.Screen>
       <Stack.Screen name="Warehouses" component={WarehousesScreen} options={{ headerShown: true, title: 'Warehouses' }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: 'My Profile' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings' }} />
+      <Stack.Screen name="Customers" component={CustomersScreen} options={{ headerShown: true, title: 'Customers' }} />
+      <Stack.Screen name="CustomerForm" options={{ headerShown: true, title: 'Add Customer' }}>
+        {(props: any) => <CustomerFormScreen {...props} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN NAVIGATOR — wraps stack in custom drawer
+// ═══════════════════════════════════════════════════════════════════════════
 
 export default function MainNavigator({ onLogout }: Props) {
   return (

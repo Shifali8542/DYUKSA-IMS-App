@@ -2,13 +2,12 @@ import React from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useDrawer } from '../../navigation/MainNavigator';
+import { useDrawer } from '../../navigation/DrawerContext';
 import { useTheme } from '../../theme/ThemeContext';
 import { useHome } from './hooks/useHome';
 import Loader from '../../components/Loader/Loader';
 import ErrorState from '../../components/ErrorState/ErrorState';
 import Badge from '../../components/Badge/Badge';
-import { styles } from './Home.styles';
 import type { Product } from '../../types';
 
 export default function HomeScreen() {
@@ -45,7 +44,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header with Hamburger ─────────────────────────────────── */}
+        {/* Header */}
         <View style={{
           flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
           paddingHorizontal: spacing.base, paddingTop: spacing.sm, paddingBottom: spacing.lg,
@@ -77,7 +76,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ── KPI Cards ─────────────────────────────────────────────── */}
+        {/* KPI Cards */}
         <View style={{ paddingHorizontal: spacing.base }}>
           <Text style={{
             color: colors.textSecondary, fontSize: fontSize.xs,
@@ -112,7 +111,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ── Quick Actions ─────────────────────────────────────────── */}
+        {/* Quick Actions */}
         <View style={{ paddingHorizontal: spacing.base, marginTop: spacing.xl }}>
           <Text style={{
             color: colors.textSecondary, fontSize: fontSize.xs,
@@ -138,7 +137,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ── Low Stock Alerts ──────────────────────────────────────── */}
+        {/* Low Stock Alerts */}
         {lowStock.length > 0 && (
           <View style={{ paddingHorizontal: spacing.base, marginTop: spacing.xl }}>
             <Text style={{
@@ -170,14 +169,14 @@ export default function HomeScreen() {
                     <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{p.name}</Text>
                     <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>SKU: {p.sku}</Text>
                   </View>
-                  <Badge label={`${p.total_stock} left`} variant="danger" />
+                  <Badge label={`${p.available_stock ?? 0} left`} variant="danger" />
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         )}
 
-        {/* ── Warehouse Capacity ────────────────────────────────────── */}
+        {/* Warehouse Capacity */}
         {d?.warehouses && d.warehouses.length > 0 && (
           <View style={{ paddingHorizontal: spacing.base, marginTop: spacing.xl }}>
             <Text style={{
@@ -194,16 +193,16 @@ export default function HomeScreen() {
               }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
                   <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>{wh.name}</Text>
-                  <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>{wh.percent}%</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>{wh.capacity_percent}%</Text>
                 </View>
                 <View style={{ height: 8, backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.full }}>
                   <View style={{
                     height: 8, borderRadius: borderRadius.full,
-                    width: `${Math.min(wh.percent, 100)}%` as any,
-                    backgroundColor: wh.percent > 80 ? '#DC2626' : wh.percent > 60 ? '#D97706' : '#16A34A',
+                    width: `${Math.min(wh.capacity_percent, 100)}%` as any,
+                    backgroundColor: wh.capacity_percent > 80 ? '#DC2626' : wh.capacity_percent > 60 ? '#D97706' : '#16A34A',
                   }} />
                 </View>
-                <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: 4 }}>{wh.items} items</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: 4 }}>{wh.items_on_hand} items</Text>
               </View>
             ))}
           </View>

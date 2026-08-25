@@ -3,7 +3,7 @@ import { View, Text, ScrollView } from 'react-native';
 import { styles } from './Profile.styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
-import { UserApi } from '../../services/Api';
+import { UserApi } from '../../api/api';
 import { tokenStorage } from '../../utils/tokenStorage';
 import { decodeJwtPayload } from '../../utils/jwt';
 import Loader from '../../components/Loader/Loader';

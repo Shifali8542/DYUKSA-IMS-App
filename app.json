@@ -2,7 +2,7 @@
   "expo": {
     "name": "DYUKSA IMS",
     "slug": "dyuksa-ims",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -22,7 +22,6 @@
         "backgroundColor": "#1A56DB"
       },
       "package": "com.dyuksa.ims"
-    },
-    "plugins": ["expo-secure-store"]
+    }
   }
 }
