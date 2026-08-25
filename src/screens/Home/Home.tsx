@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { styles } from './Home.styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useDrawer } from '../../navigation/DrawerContext';
@@ -8,6 +9,10 @@ import { useHome } from './hooks/useHome';
 import Loader from '../../components/Loader/Loader';
 import ErrorState from '../../components/ErrorState/ErrorState';
 import Badge from '../../components/Badge/Badge';
+import Card from '../../components/Card/Card';
+import StatCard from './components/StatCard';
+import MiniDonutChart from './components/MiniDonutChart';
+import MiniBarChart from './components/MiniBarChart';
 import type { Product } from '../../types';
 
 export default function HomeScreen() {
@@ -21,34 +26,37 @@ export default function HomeScreen() {
 
   const d = dashboard;
 
-  const kpis = [
-    { label: 'Total Products', value: d?.total_products ?? 0, icon: '📦', bg: '#EEF2FF', color: '#4F46E5' },
-    { label: 'Warehouses', value: d?.total_warehouses ?? 0, icon: '🏭', bg: '#F0FDF4', color: '#16A34A' },
-    { label: 'Low Stock', value: d?.low_stock_count ?? 0, icon: '⚠️', bg: '#FFFBEB', color: '#D97706' },
-    { label: 'Pending Orders', value: d?.pending_orders ?? 0, icon: '📋', bg: '#FFF1F2', color: '#E11D48' },
-    { label: 'Dispatches Today', value: d?.today_dispatches ?? 0, icon: '🚚', bg: '#F0F9FF', color: '#0284C7' },
-    { label: 'Pending Dispatch', value: d?.pending_dispatches ?? 0, icon: '📤', bg: '#FDF4FF', color: '#A21CAF' },
-  ];
-
+  // ── Quick Actions ──
   const quickActions = [
     { label: 'Inventory', icon: '📦', onPress: () => navigation.navigate('MainTabs', { screen: 'Inventory' }) },
-    { label: 'Orders', icon: '📋', onPress: () => navigation.navigate('MainTabs', { screen: 'Orders' }) },
-    { label: 'Warehouses', icon: '🏭', onPress: () => navigation.navigate('Warehouses') },
-    { label: 'Alerts', icon: '🔔', onPress: () => navigation.navigate('MainTabs', { screen: 'Alerts' }) },
+    { label: 'Orders',    icon: '📋', onPress: () => navigation.navigate('MainTabs', { screen: 'Orders' }) },
+    { label: 'Scan',      icon: '📷', onPress: () => navigation.navigate('Scanner') },
+    { label: 'Alerts',    icon: '🔔', onPress: () => navigation.navigate('MainTabs', { screen: 'Alerts' }) },
   ];
 
+  // ── Stock health data for donut ──
+  const totalProducts = d?.total_products ?? 0;
+  const lowStockCount = d?.low_stock_count ?? 0;
+  const healthyStock = Math.max(totalProducts - lowStockCount, 0);
+
+  // ── PO status data for bar chart ──
+  const po = d?.purchase_orders;
+  const poBars = po ? [
+    { label: 'Draft',    value: po.draft,     color: '#6B7280' },
+    { label: 'Approved', value: po.approved,  color: '#3B82F6' },
+    { label: 'Received', value: po.received,  color: '#10B981' },
+    { label: 'Cancelled', value: po.cancelled, color: '#EF4444' },
+  ] : [];
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={{
-          flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-          paddingHorizontal: spacing.base, paddingTop: spacing.sm, paddingBottom: spacing.lg,
-        }}>
+        {/* ── Header ── */}
+        <View style={[styles.header, { paddingHorizontal: spacing.base, paddingTop: spacing.sm, paddingBottom: spacing.lg }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity
               onPress={() => openDrawer()}
@@ -56,7 +64,6 @@ export default function HomeScreen() {
                 width: 40, height: 40, borderRadius: borderRadius.md,
                 backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
                 marginRight: spacing.base, borderWidth: 1, borderColor: colors.border,
-                shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2,
               }}
             >
               <Text style={{ fontSize: 18 }}>☰</Text>
@@ -76,47 +83,104 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* KPI Cards */}
+        {/* ── KPI Row 1 — Primary Stats ── */}
         <View style={{ paddingHorizontal: spacing.base }}>
-          <Text style={{
-            color: colors.textSecondary, fontSize: fontSize.xs,
-            fontWeight: fontWeight.semibold, letterSpacing: 1, marginBottom: spacing.sm,
-          }}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold, marginBottom: spacing.sm }]}>
             OVERVIEW
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {kpis.map((kpi) => (
-              <View
-                key={kpi.label}
-                style={{
-                  width: '48%', backgroundColor: colors.surface, borderRadius: borderRadius.lg,
-                  padding: spacing.base, borderWidth: 1, borderColor: colors.border,
-                  shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
-                }}
-              >
-                <View style={{
-                  width: 44, height: 44, borderRadius: borderRadius.md,
-                  backgroundColor: kpi.bg, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm,
-                }}>
-                  <Text style={{ fontSize: 22 }}>{kpi.icon}</Text>
-                </View>
-                <Text style={{ color: colors.textPrimary, fontSize: fontSize.xxl, fontWeight: fontWeight.bold }}>
-                  {kpi.value}
-                </Text>
-                <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: 2 }}>
-                  {kpi.label}
-                </Text>
-              </View>
-            ))}
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <StatCard icon="📦" label="Products"   value={d?.total_products ?? 0}     iconBg="#EEF2FF" />
+            <StatCard icon="🏭" label="Warehouses" value={d?.total_warehouses ?? 0}   iconBg="#F0FDF4" />
+            <StatCard icon="⚠️" label="Low Stock"  value={d?.low_stock_count ?? 0}    iconBg="#FFFBEB" />
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+            <StatCard icon="📋" label="Pending Orders" value={d?.pending_orders ?? 0}     iconBg="#FFF1F2" />
+            <StatCard icon="🚚" label="Today Dispatch" value={d?.today_dispatches ?? 0}   iconBg="#F0F9FF" />
+            <StatCard icon="📤" label="Pending Disp."  value={d?.pending_dispatches ?? 0} iconBg="#FDF4FF" />
           </View>
         </View>
 
-        {/* Quick Actions */}
+        {/* ── Charts Row — Stock Health + PO Status ── */}
         <View style={{ paddingHorizontal: spacing.base, marginTop: spacing.xl }}>
-          <Text style={{
-            color: colors.textSecondary, fontSize: fontSize.xs,
-            fontWeight: fontWeight.semibold, letterSpacing: 1, marginBottom: spacing.sm,
-          }}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold, marginBottom: spacing.sm }]}>
+            ANALYTICS
+          </Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            {/* Stock Health Donut */}
+            <Card style={{ flex: 1, alignItems: 'center', paddingVertical: spacing.lg }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: fontWeight.semibold, letterSpacing: 0.5, marginBottom: spacing.sm }}>
+                STOCK HEALTH
+              </Text>
+              <MiniDonutChart
+                segments={[
+                  { value: healthyStock,  color: '#10B981', label: 'Healthy' },
+                  { value: lowStockCount, color: '#F59E0B', label: 'Low' },
+                ]}
+                size={110}
+                strokeWidth={14}
+                centerValue={totalProducts}
+                centerLabel="Total"
+              />
+              <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.base }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' }} />
+                  <Text style={{ color: colors.textSecondary, fontSize: 9 }}>Healthy {healthyStock}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B' }} />
+                  <Text style={{ color: colors.textSecondary, fontSize: 9 }}>Low {lowStockCount}</Text>
+                </View>
+              </View>
+            </Card>
+
+            {/* PO Status Bar Chart */}
+            <Card style={{ flex: 1 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: fontWeight.semibold, letterSpacing: 0.5, marginBottom: spacing.xs }}>
+                PURCHASE ORDERS
+              </Text>
+              {poBars.length > 0 ? (
+                <MiniBarChart bars={poBars} height={80} barWidth={24} />
+              ) : (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>No PO data</Text>
+                </View>
+              )}
+            </Card>
+          </View>
+        </View>
+
+        {/* ── Revenue Card (if available) ── */}
+        {(d?.revenue_30_days || d?.orders_30_days) && (
+          <View style={{ paddingHorizontal: spacing.base, marginTop: spacing.sm }}>
+            <Card>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: fontWeight.semibold, letterSpacing: 0.5 }}>
+                    LAST 30 DAYS
+                  </Text>
+                  {d?.revenue_30_days && (
+                    <Text style={{ color: colors.textPrimary, fontSize: fontSize.xxl, fontWeight: fontWeight.bold, marginTop: 4 }}>
+                      ₹{parseFloat(d.revenue_30_days).toLocaleString()}
+                    </Text>
+                  )}
+                  <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>
+                    Revenue
+                  </Text>
+                </View>
+                {d?.orders_30_days !== undefined && (
+                  <View style={{ alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: borderRadius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
+                    <Text style={{ color: colors.primary, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>{d.orders_30_days}</Text>
+                    <Text style={{ color: colors.primary, fontSize: 9 }}>Orders</Text>
+                  </View>
+                )}
+              </View>
+            </Card>
+          </View>
+        )}
+
+        {/* ── Quick Actions ── */}
+        <View style={{ paddingHorizontal: spacing.base, marginTop: spacing.xl }}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold, marginBottom: spacing.sm }]}>
             QUICK ACTIONS
           </Text>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -127,7 +191,6 @@ export default function HomeScreen() {
                 style={{
                   flex: 1, backgroundColor: colors.surface, borderRadius: borderRadius.lg,
                   paddingVertical: spacing.lg, alignItems: 'center', borderWidth: 1, borderColor: colors.border,
-                  shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
                 }}
               >
                 <Text style={{ fontSize: 24, marginBottom: spacing.xs }}>{action.icon}</Text>
@@ -137,19 +200,13 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Low Stock Alerts */}
+        {/* ── Low Stock Alerts ── */}
         {lowStock.length > 0 && (
           <View style={{ paddingHorizontal: spacing.base, marginTop: spacing.xl }}>
-            <Text style={{
-              color: colors.textSecondary, fontSize: fontSize.xs,
-              fontWeight: fontWeight.semibold, letterSpacing: 1, marginBottom: spacing.sm,
-            }}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold, marginBottom: spacing.sm }]}>
               LOW STOCK ALERTS
             </Text>
-            <View style={{
-              backgroundColor: colors.surface, borderRadius: borderRadius.lg,
-              borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
-            }}>
+            <Card style={{ padding: 0, overflow: 'hidden' }}>
               {lowStock.map((p: Product, index: number) => (
                 <TouchableOpacity
                   key={p.id}
@@ -172,38 +229,31 @@ export default function HomeScreen() {
                   <Badge label={`${p.available_stock ?? 0} left`} variant="danger" />
                 </TouchableOpacity>
               ))}
-            </View>
+            </Card>
           </View>
         )}
 
-        {/* Warehouse Capacity */}
+        {/* ── Warehouse Capacity ── */}
         {d?.warehouses && d.warehouses.length > 0 && (
           <View style={{ paddingHorizontal: spacing.base, marginTop: spacing.xl }}>
-            <Text style={{
-              color: colors.textSecondary, fontSize: fontSize.xs,
-              fontWeight: fontWeight.semibold, letterSpacing: 1, marginBottom: spacing.sm,
-            }}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold, marginBottom: spacing.sm }]}>
               WAREHOUSE CAPACITY
             </Text>
             {d.warehouses.map((wh) => (
-              <View key={wh.id} style={{
-                backgroundColor: colors.surface, borderRadius: borderRadius.lg,
-                padding: spacing.base, marginBottom: spacing.sm,
-                borderWidth: 1, borderColor: colors.border,
-              }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+              <Card key={wh.id} style={{ marginBottom: spacing.sm }}>
+                <View style={[styles.whHeader, { marginBottom: spacing.xs }]}>
                   <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>{wh.name}</Text>
                   <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>{wh.capacity_percent}%</Text>
                 </View>
-                <View style={{ height: 8, backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.full }}>
-                  <View style={{
-                    height: 8, borderRadius: borderRadius.full,
+                <View style={[styles.progressBg, { backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.full }]}>
+                  <View style={[styles.progressFill, {
+                    borderRadius: borderRadius.full,
                     width: `${Math.min(wh.capacity_percent, 100)}%` as any,
                     backgroundColor: wh.capacity_percent > 80 ? '#DC2626' : wh.capacity_percent > 60 ? '#D97706' : '#16A34A',
-                  }} />
+                  }]} />
                 </View>
                 <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: 4 }}>{wh.items_on_hand} items</Text>
-              </View>
+              </Card>
             ))}
           </View>
         )}
