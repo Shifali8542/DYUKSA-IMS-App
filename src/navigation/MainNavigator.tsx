@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { DrawerContext } from './DrawerContext';
 
 import HomeScreen from '../screens/Home/Home';
@@ -21,6 +22,7 @@ import ProfileScreen from '../screens/Profile/Profile';
 import SettingsScreen from '../screens/Settings/Settings';
 import CustomersScreen from '../screens/Customers/Customers';
 import CustomerFormScreen from '../screens/CustomerForm/CustomerForm';
+import ScannerScreen from '../screens/Scanner/scanner';
 
 const DRAWER_WIDTH = 280;
 
@@ -45,25 +47,26 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const { canCreateCustomers } = usePermissions();
 
   function navigateTo(screen: string, params?: Record<string, any>) {
     closeDrawer();
     setTimeout(() => {
       try {
         navigation.navigate(screen, params);
-      } catch {}
+      } catch { }
     }, 150);
   }
 
   const menuItems = [
-    { label: 'Home',          icon: '🏠', onPress: () => navigateTo('MainTabs', { screen: 'Home' }) },
-    { label: 'Inventory',     icon: '📦', onPress: () => navigateTo('MainTabs', { screen: 'Inventory' }) },
-    { label: 'Orders',        icon: '📋', onPress: () => navigateTo('MainTabs', { screen: 'Orders' }) },
-    { label: 'Warehouses',    icon: '🏭', onPress: () => navigateTo('Warehouses') },
-    { label: 'Customers',     icon: '👥', onPress: () => navigateTo('Customers') },
+    { label: 'Home', icon: '🏠', onPress: () => navigateTo('MainTabs', { screen: 'Home' }) },
+    { label: 'Inventory', icon: '📦', onPress: () => navigateTo('MainTabs', { screen: 'Inventory' }) },
+    { label: 'Orders', icon: '📋', onPress: () => navigateTo('MainTabs', { screen: 'Orders' }) },
+    { label: 'Warehouses', icon: '🏭', onPress: () => navigateTo('Warehouses') },
+    ...(canCreateCustomers ? [{ label: 'Customers', icon: '👥', onPress: () => navigateTo('Customers') }] : []),
     { label: 'Notifications', icon: '🔔', onPress: () => navigateTo('MainTabs', { screen: 'Alerts' }) },
-    { label: 'My Profile',    icon: '👤', onPress: () => navigateTo('Profile') },
-    { label: 'Settings',      icon: '⚙️', onPress: () => navigateTo('Settings') },
+    { label: 'My Profile', icon: '👤', onPress: () => navigateTo('Profile') },
+    { label: 'Settings', icon: '⚙️', onPress: () => navigateTo('Settings') },
   ];
 
   return (
@@ -247,6 +250,9 @@ function MainStack({ onLogout }: Props) {
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: 'My Profile' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings' }} />
       <Stack.Screen name="Customers" component={CustomersScreen} options={{ headerShown: true, title: 'Customers' }} />
+      <Stack.Screen name="Scanner" options={{ headerShown: false, title: 'Scan Barcode' }}>
+        {(props: any) => <ScannerScreen {...props} />}
+      </Stack.Screen>
       <Stack.Screen name="CustomerForm" options={{ headerShown: true, title: 'Add Customer' }}>
         {(props: any) => <CustomerFormScreen {...props} />}
       </Stack.Screen>

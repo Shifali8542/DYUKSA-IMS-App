@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useCustomers } from './hooks/useCustomers';
 import SearchBar from '../../components/SearchBar/SearchBar';
 import Badge from '../../components/Badge/Badge';
@@ -17,6 +18,7 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 export default function CustomersScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
+  const { canCreateCustomers } = usePermissions();
   const nav = useNavigation<Nav>();
   const { customers, search, setSearch, loading, refreshing, error, total, refresh } = useCustomers();
 
@@ -62,6 +64,7 @@ export default function CustomersScreen() {
     );
   }
 
+
   if (loading && customers.length === 0) return <Loader fullScreen message="Loading customers..." />;
   if (error && customers.length === 0) return <ErrorState message={error} onRetry={refresh} />;
 
@@ -94,19 +97,21 @@ export default function CustomersScreen() {
         }
       />
 
-      {/* FAB — Add Customer */}
-      <TouchableOpacity
-        onPress={() => nav.navigate('CustomerForm' as any, {})}
-        style={{
-          position: 'absolute', bottom: 24, right: spacing.base,
-          width: 56, height: 56, borderRadius: 28,
-          backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
-          shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
-        }}
-      >
-        <Text style={{ color: colors.textInverse, fontSize: 28, fontWeight: '300', marginTop: -2 }}>+</Text>
-      </TouchableOpacity>
+      {/* FAB — Add Customer (role-gated) */}
+      {canCreateCustomers && (
+        <TouchableOpacity
+          onPress={() => nav.navigate('CustomerForm' as any, {})}
+          style={{
+            position: 'absolute', bottom: 24, right: spacing.base,
+            width: 56, height: 56, borderRadius: 28,
+            backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+            shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+          }}
+        >
+          <Text style={{ color: colors.textInverse, fontSize: 28, fontWeight: '300', marginTop: -2 }}>+</Text>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }

@@ -26,10 +26,10 @@ const EMPTY_FORM: FormFields = {
 
 type FormErrors = Partial<Record<keyof FormFields, string>>;
 
-export function useProductForm(productId?: number) {
+export function useProductForm(productId?: number, prefillBarcode?: string) {
   const isEdit = !!productId;
 
-  const [form, setForm] = useState<FormFields>(EMPTY_FORM);
+  const [form, setForm] = useState<FormFields>({ ...EMPTY_FORM, barcode: prefillBarcode ?? '' });
   const [errors, setErrors] = useState<FormErrors>({});
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -172,7 +172,7 @@ export function useProductForm(productId?: number) {
 
       setSaved(true);
       return true;
-        } catch (e: any) {
+    } catch (e: any) {
       const errorData = e?.response?.data;
       const errorObj = errorData?.error;
 

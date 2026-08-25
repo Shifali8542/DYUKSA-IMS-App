@@ -1,20 +1,26 @@
 // ── DYUKSA IMS Mobile — Centralized Type System ───────────────────────────
 // Mirrors the Django backend response schemas exactly.
-// Every type here corresponds to a backend serializer.
 
 // ── Auth ─────────────────────────────────────────────────────────────────
 export type ImsRole =
   | 'ims_admin'
   | 'warehouse_mgr'
-  | 'sales_executive'
   | 'branch_manager'
-  | 'accountant'
+  | 'procurement_manager'
+  | 'inventory_controller'
+  | 'receiving_staff'
+  | 'quality_inspector'
+  | 'picker'
+  | 'packer'
+  | 'dispatcher'
+  | 'fleet_manager'
+  | 'driver'
+  | 'ims_sales_exec'
+  | 'order_manager'
+  | 'ims_customer_support'
+  | 'ims_billing_exec'
+  | 'ims_accountant'
   | 'employee';
-
-export interface PlatformRoles {
-  all?: string;
-  ims?: ImsRole | string;
-}
 
 export interface JwtPayload {
   user_id: number;
@@ -25,15 +31,13 @@ export interface JwtPayload {
   org_id: number;
   org_name: string;
   org_slug: string;
-  platform_roles: PlatformRoles;
+  platform_roles: { ims?: ImsRole | string;[key: string]: any };
 }
 
-export interface AuthTokens {
+export interface LoginResponse {
   access: string;
   refresh: string;
 }
-
-export interface LoginResponse extends AuthTokens { }
 
 export interface RefreshResponse {
   access: string;
@@ -65,15 +69,6 @@ export interface User {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
-export interface DashboardWarehouse {
-  id: number;
-  name: string;
-  code: string;
-  capacity: number;
-  items_on_hand: number;
-  capacity_percent: number;
-}
-
 export interface DashboardData {
   total_products: number;
   total_warehouses: number;
@@ -90,10 +85,17 @@ export interface DashboardData {
     received: number;
     cancelled: number;
   };
-  warehouses?: DashboardWarehouse[];
+  warehouses?: {
+    id: number;
+    name: string;
+    code: string;
+    capacity: number;
+    items_on_hand: number;
+    capacity_percent: number;
+  }[];
 }
 
-// ── Product — matches backend ProductSerializer ───────────────────────────
+// ── Product ───────────────────────────────────────────────────────────────
 export interface Product {
   id: number;
   name: string;
@@ -132,14 +134,13 @@ export interface ProductCreatePayload {
   barcode?: string;
 }
 
-// ── Brand — matches backend BrandSerializer ───────────────────────────────
+// ── Brand / Unit ──────────────────────────────────────────────────────────
 export interface Brand {
   id: number;
   name: string;
   is_active: boolean;
 }
 
-// ── Unit — matches backend UnitSerializer ─────────────────────────────────
 export interface Unit {
   id: number;
   name: string;
@@ -147,7 +148,7 @@ export interface Unit {
   is_active: boolean;
 }
 
-// ── Inventory — matches backend InventoryBalanceSerializer ────────────────
+// ── Inventory ─────────────────────────────────────────────────────────────
 export interface InventoryBalance {
   id: number;
   product: number;
@@ -168,7 +169,6 @@ export interface InventoryBalance {
   updated_at: string;
 }
 
-// ── Product Stock Response — matches backend ProductViewSet.stock action ──
 export interface ProductStockResponse {
   product_id: number;
   sku: string;
@@ -189,7 +189,6 @@ export interface ProductStockResponse {
   }[];
 }
 
-// ── Stock Adjustment — matches backend StockAdjustmentView ────────────────
 export interface StockAdjustmentPayload {
   product_id: number;
   warehouse_id: number;
@@ -210,7 +209,7 @@ export interface StockAdjustmentResponse {
   available_after: string;
 }
 
-// ── Warehouse — matches backend WarehouseSerializer ───────────────────────
+// ── Warehouse / Category ──────────────────────────────────────────────────
 export interface Warehouse {
   id: number;
   name: string;
@@ -224,7 +223,6 @@ export interface Warehouse {
   manager?: number | null;
 }
 
-// ── Category — matches backend CategorySerializer ─────────────────────────
 export interface Category {
   id: number;
   name: string;
@@ -233,7 +231,7 @@ export interface Category {
   is_active: boolean;
 }
 
-// ── Supplier — matches backend SupplierSerializer ─────────────────────────
+// ── Supplier / Customer ───────────────────────────────────────────────────
 export interface Supplier {
   id: number;
   code: string;
@@ -250,7 +248,6 @@ export interface Supplier {
   is_active: boolean;
 }
 
-// ── Customer — matches backend CustomerSerializer ─────────────────────────
 export interface Customer {
   id: number;
   code: string;
@@ -272,25 +269,7 @@ export interface CustomerCreatePayload {
   city?: string;
 }
 
-// ── Sales Order — matches backend SalesOrderSerializer ────────────────────
-export type OrderStatus =
-  | 'draft' | 'confirmed' | 'packed' | 'dispatched' | 'delivered' | 'cancelled';
-
-export interface OrderItem {
-  id: number;
-  product: number;
-  product_name?: string;
-  product_sku?: string;
-  quantity: string;
-  unit_price: string;
-  discount: string;
-  tax_rate: string;
-  line_subtotal?: string;
-  line_discount?: string;
-  line_tax?: string;
-  line_total?: string;
-}
-
+// ── Sales Order ───────────────────────────────────────────────────────────
 export interface SalesOrder {
   id: number;
   order_number: string;
@@ -300,7 +279,7 @@ export interface SalesOrder {
   warehouse: number;
   warehouse_name?: string;
   warehouse_code?: string;
-  status: OrderStatus;
+  status: string;
   status_display?: string;
   order_date: string;
   expected_delivery?: string;
@@ -308,20 +287,26 @@ export interface SalesOrder {
   discount_amount: string;
   tax_amount: string;
   notes: string;
-  items?: OrderItem[];
+  items?: {
+    id: number;
+    product: number;
+    product_name?: string;
+    product_sku?: string;
+    quantity: string;
+    unit_price: string;
+    discount: string;
+    tax_rate: string;
+    line_subtotal?: string;
+    line_total?: string;
+  }[];
   subtotal?: string;
   total?: string;
-  approved_by?: number | null;
-  approved_by_name?: string | null;
-  approved_at?: string | null;
   cancelled_reason?: string;
   created_at: string;
   updated_at?: string;
-  created_by?: number;
   created_by_name?: string;
 }
 
-// ── Create Order — matches backend CreateOrderSerializer ──────────────────
 export interface CreateOrderItemPayload {
   product_id: number;
   quantity: string;
@@ -342,10 +327,7 @@ export interface CreateOrderPayload {
   items: CreateOrderItemPayload[];
 }
 
-// ── Purchase Order — matches backend PurchaseOrderSerializer ──────────────
-export type POStatus =
-  | 'draft' | 'approved' | 'sent' | 'partially_received' | 'received' | 'cancelled';
-
+// ── Purchase Order ────────────────────────────────────────────────────────
 export interface PurchaseOrder {
   id: number;
   number: string;
@@ -353,7 +335,7 @@ export interface PurchaseOrder {
   supplier_name?: string;
   warehouse: number;
   warehouse_name?: string;
-  status: POStatus;
+  status: string;
   order_date: string;
   expected_date?: string;
   subtotal: string;
@@ -363,10 +345,7 @@ export interface PurchaseOrder {
   created_at: string;
 }
 
-// ── Dispatch — matches backend DispatchNoteSerializer ─────────────────────
-export type DispatchStatus =
-  | 'pending' | 'approved' | 'dispatched' | 'delivered' | 'returned';
-
+// ── Dispatch ──────────────────────────────────────────────────────────────
 export interface DispatchNote {
   id: number;
   dispatch_number: string;
@@ -374,20 +353,16 @@ export interface DispatchNote {
   order_number?: string;
   customer_name?: string;
   warehouse_name?: string;
-  status: DispatchStatus;
+  status: string;
   carrier?: string;
   tracking_number?: string;
   created_at: string;
 }
 
-// ── Notification — matches backend NotificationSerializer ─────────────────
-export type NotificationType =
-  | 'low_stock' | 'order_confirmed' | 'order_delivered'
-  | 'po_received' | 'transfer_done' | 'invoice_overdue' | 'general';
-
+// ── Notification ──────────────────────────────────────────────────────────
 export interface Notification {
   id: number;
-  notification_type: NotificationType;
+  notification_type: string;
   subject: string;
   message: string;
   status: 'pending' | 'sent' | 'failed' | 'read';
@@ -420,7 +395,7 @@ export type MainTabParamList = {
 export type MainStackParamList = {
   MainTabs: undefined;
   ProductDetails: { productId: number };
-  ProductForm: { productId?: number };
+  ProductForm: { productId?: number; barcode?: string };
   OrderDetail: { orderId: number };
   OrderForm: undefined;
   Warehouses: undefined;
@@ -428,4 +403,5 @@ export type MainStackParamList = {
   Settings: undefined;
   Customers: undefined;
   CustomerForm: { customerId?: number };
+  Scanner: undefined;
 };

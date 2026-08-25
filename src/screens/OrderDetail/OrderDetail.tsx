@@ -4,6 +4,7 @@ import { styles } from './OrderDetail.styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useOrderDetail } from './hooks/useOrderDetail';
 import Loader from '../../components/Loader/Loader';
 import ErrorState from '../../components/ErrorState/ErrorState';
@@ -19,6 +20,7 @@ export default function OrderDetailScreen({ route }: Props) {
   const { orderId } = route.params;
   const { colors, spacing, fontSize, fontWeight } = useTheme();
   const { order, loading, error, transitioning, actions, handleAction } = useOrderDetail(orderId);
+  const { canConfirmOrders } = usePermissions();
 
   if (loading) return <Loader fullScreen />;
   if (error) return <ErrorState message={error} />;
@@ -77,7 +79,7 @@ export default function OrderDetailScreen({ route }: Props) {
           </Card>
         )}
 
-        {actions.length > 0 && (
+        {canConfirmOrders && actions.length > 0 && (
           <Card>
             <Text style={{ color: colors.textPrimary, fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: spacing.sm }}>Actions</Text>
             <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>

@@ -16,6 +16,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'ProductForm'>;
 
 export default function ProductFormScreen({ route, navigation }: Props) {
   const productId = route.params?.productId;
+  const prefillBarcode = (route.params as any)?.barcode;
   const { colors, spacing, fontSize, fontWeight } = useTheme();
   const {
     form, setField, errors,
@@ -23,7 +24,7 @@ export default function ProductFormScreen({ route, navigation }: Props) {
     loading, saving, saved,
     isEdit, handleSave,
     createCategory, createBrand, createUnit,
-  } = useProductForm(productId);
+  } = useProductForm(productId, prefillBarcode);
 
   useEffect(() => {
     navigation.setOptions({ title: isEdit ? 'Edit Product' : 'Add Product' });

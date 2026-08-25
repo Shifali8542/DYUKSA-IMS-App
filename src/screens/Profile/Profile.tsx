@@ -3,13 +3,14 @@ import { View, Text, ScrollView } from 'react-native';
 import { styles } from './Profile.styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
+import type { User, JwtPayload } from '../../types';
+import { getRoleLabel } from '../../constants';
 import { UserApi } from '../../api/api';
 import { tokenStorage } from '../../utils/tokenStorage';
 import { decodeJwtPayload } from '../../utils/jwt';
 import Loader from '../../components/Loader/Loader';
 import Card from '../../components/Card/Card';
 import Badge from '../../components/Badge/Badge';
-import type { User, JwtPayload } from '../../types';
 
 export default function ProfileScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
@@ -53,7 +54,7 @@ export default function ProfileScreen() {
           <Text style={{ color: colors.textPrimary, fontSize: fontSize.xl, fontWeight: fontWeight.bold, marginTop: spacing.base }}>
             {displayName}
           </Text>
-          <Badge label={String(role).replace(/_/g, ' ').toUpperCase()} variant="primary" />
+          <Badge label={getRoleLabel(String(role))} variant="primary" />
         </Card>
 
         {/* Info */}
@@ -65,7 +66,7 @@ export default function ProfileScreen() {
             { label: 'Email',        value: email },
             { label: 'Username',     value: user?.username ?? jwt?.username ?? '—' },
             { label: 'Organisation', value: orgName },
-            { label: 'Role',         value: String(role) },
+            { label: 'Role',         value: getRoleLabel(String(role)) },
             { label: 'Status',       value: user?.is_active ? 'Active' : 'Inactive' },
           ].map(({ label, value }) => (
             <View key={label} style={[styles.row, { borderBottomColor: colors.border, paddingVertical: spacing.sm }]}>

@@ -6,6 +6,7 @@ import {
 } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useProductDetails } from './hooks/useProductDetails';
 import { ProductApi } from '../../api/api';
 import { useStockAdjust } from './hooks/useStockAdjust';
@@ -20,6 +21,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'ProductDetails'>;
 
 export default function ProductDetailsScreen({ route, navigation }: Props) {
   const { productId } = route.params;
+  const { canEditProducts, canDeleteProducts, canAdjustStock } = usePermissions();
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const { product, stockLevels, loading, error, refresh } = useProductDetails(productId);
   const adjust = useStockAdjust(productId);
@@ -79,39 +81,47 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={{ padding: spacing.base }}>
 
-        {/* Action Buttons */}
-        <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.base }}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ProductForm', { productId: product.id })}
-            style={{
-              flex: 1, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: colors.primary, borderRadius: borderRadius.md,
-              paddingVertical: spacing.md,
-            }}
-          >
-            <Text style={{ color: colors.textInverse, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => adjust.open()}
-            style={{
-              flex: 1, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: colors.success, borderRadius: borderRadius.md,
-              paddingVertical: spacing.md,
-            }}
-          >
-            <Text style={{ color: colors.textInverse, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>Adjust Stock</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDelete()}
-            style={{
-              flex: 1, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: colors.danger, borderRadius: borderRadius.md,
-              paddingVertical: spacing.md,
-            }}
-          >
-            <Text style={{ color: colors.textInverse, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>Delete</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Action Buttons (role-gated) */}
+        {(canEditProducts || canAdjustStock || canDeleteProducts) && (
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.base }}>
+            {canEditProducts && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ProductForm', { productId: product.id })}
+                style={{
+                  flex: 1, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: colors.primary, borderRadius: borderRadius.md,
+                  paddingVertical: spacing.md,
+                }}
+              >
+                <Text style={{ color: colors.textInverse, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>Edit</Text>
+              </TouchableOpacity>
+            )}
+            {canAdjustStock && (
+              <TouchableOpacity
+                onPress={() => adjust.open()}
+                style={{
+                  flex: 1, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: colors.success, borderRadius: borderRadius.md,
+                  paddingVertical: spacing.md,
+                }}
+              >
+                <Text style={{ color: colors.textInverse, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>Adjust Stock</Text>
+              </TouchableOpacity>
+            )}
+            {canDeleteProducts && (
+              <TouchableOpacity
+                onPress={() => handleDelete()}
+                style={{
+                  flex: 1, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: colors.danger, borderRadius: borderRadius.md,
+                  paddingVertical: spacing.md,
+                }}
+              >
+                <Text style={{ color: colors.textInverse, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>Delete</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Hero */}
         <Card style={{ marginBottom: spacing.base }}>

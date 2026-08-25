@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useInventory } from './hooks/useInventory';
 import SearchBar from '../../components/SearchBar/SearchBar';
 import Badge from '../../components/Badge/Badge';
@@ -17,6 +18,7 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 export default function InventoryScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
+  const { canCreateProducts } = usePermissions();
   const nav = useNavigation<Nav>();
   const {
     products, categories, search, setSearch,
@@ -78,9 +80,20 @@ export default function InventoryScreen() {
         <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm }}>{total} products</Text>
       </View>
 
-      {/* Search */}
-      <View style={{ padding: spacing.base, backgroundColor: colors.surface }}>
-        <SearchBar value={search} onChangeText={setSearch} placeholder="Search products, SKU..." />
+      {/* Search + Scan */}
+      <View style={{ padding: spacing.base, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <View style={{ flex: 1 }}>
+          <SearchBar value={search} onChangeText={setSearch} placeholder="Search products, SKU..." />
+        </View>
+        <TouchableOpacity
+          onPress={() => nav.navigate('Scanner')}
+          style={{
+            width: 44, height: 44, borderRadius: borderRadius.md,
+            backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 20 }}>📷</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Category filter */}
@@ -137,19 +150,21 @@ export default function InventoryScreen() {
         }
         ListFooterComponent={hasMore ? <Loader /> : null}
       />
-      {/* FAB — Add Product */}
-      <TouchableOpacity
-        onPress={() => nav.navigate('ProductForm', {})}
-        style={{
-          position: 'absolute', bottom: 24, right: spacing.base,
-          width: 56, height: 56, borderRadius: 28,
-          backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
-          shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
-        }}
-      >
-        <Text style={{ color: colors.textInverse, fontSize: 28, fontWeight: '300', marginTop: -2 }}>+</Text>
-      </TouchableOpacity>
+      {/* FAB — Add Product (role-gated) */}
+      {canCreateProducts && (
+        <TouchableOpacity
+          onPress={() => nav.navigate('ProductForm', {})}
+          style={{
+            position: 'absolute', bottom: 24, right: spacing.base,
+            width: 56, height: 56, borderRadius: 28,
+            backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+            shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+          }}
+        >
+          <Text style={{ color: colors.textInverse, fontSize: 28, fontWeight: '300', marginTop: -2 }}>+</Text>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }

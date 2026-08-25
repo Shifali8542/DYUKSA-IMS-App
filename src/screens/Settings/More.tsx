@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
+import { usePermissions } from '../../hooks/usePermissions';
 import { AuthApi } from '../../api/api';
 import { tokenStorage } from '../../utils/tokenStorage';
 import type { MainStackParamList } from '../../types';
@@ -12,17 +13,19 @@ import type { MainStackParamList } from '../../types';
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 interface Props { onLogout: () => void; }
 
-const MENU_ITEMS = [
-  { label: 'My Profile', icon: '👤', screen: 'Profile' },
-  { label: 'Customers', icon: '👥', screen: 'Customers' },
-  { label: 'Warehouses', icon: '🏭', screen: 'Warehouses' },
-  { label: 'Settings', icon: '⚙️', screen: 'Settings' },
-];
 
 export default function MoreScreen({ onLogout }: Props) {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
+  const { canCreateCustomers, isAdmin } = usePermissions();
   const nav = useNavigation<Nav>();
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const menuItems = [
+    { label: 'My Profile', icon: '👤', screen: 'Profile', show: true },
+    { label: 'Customers', icon: '👥', screen: 'Customers', show: canCreateCustomers },
+    { label: 'Warehouses', icon: '🏭', screen: 'Warehouses', show: true },
+    { label: 'Settings', icon: '⚙️', screen: 'Settings', show: true },
+  ].filter((item) => item.show);
 
   async function handleLogout() {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -52,7 +55,7 @@ export default function MoreScreen({ onLogout }: Props) {
         </Text>
 
         <View style={[styles.section, { backgroundColor: colors.surface, borderRadius: borderRadius.lg, borderColor: colors.border, borderWidth: 1 }]}>
-          {MENU_ITEMS.map((item, index) => (
+          {menuItems.map((item, index) => (
             <TouchableOpacity
               key={item.label}
               onPress={() => nav.navigate(item.screen as any)}
@@ -60,7 +63,7 @@ export default function MoreScreen({ onLogout }: Props) {
                 styles.menuItem,
                 {
                   padding: spacing.base,
-                  borderBottomWidth: index < MENU_ITEMS.length - 1 ? 0.5 : 0,
+                  borderBottomWidth: index < menuItems.length - 1 ? 0.5 : 0,
                   borderBottomColor: colors.border,
                 },
               ]}

@@ -3,11 +3,10 @@ import { tokenStorage } from '../utils/tokenStorage';
 import type {
   LoginResponse, RefreshResponse,
   DashboardData, Product, ProductCreatePayload,
-  InventoryBalance, ProductStockResponse,
-  StockAdjustmentPayload, StockAdjustmentResponse,
+  ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse,
   Warehouse, SalesOrder, CreateOrderPayload,
-  PurchaseOrder, DispatchNote, Notification,
-  Supplier, Customer, CustomerCreatePayload,
+  PurchaseOrder, Notification,
+  Customer, CustomerCreatePayload,
   Category, Brand, Unit,
   PaginatedResponse, IMSResponse, User,
 } from '../types';
@@ -77,7 +76,7 @@ imsClient.interceptors.response.use(
 );
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AUTH APIS — Central
+// AUTH — Central
 // ═══════════════════════════════════════════════════════════════════════════
 export const AuthApi = {
   login: async (username: string, password: string): Promise<LoginResponse> => {
@@ -103,25 +102,17 @@ export const AuthApi = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DASHBOARD API — /api/v1/reports/
+// DASHBOARD — /api/v1/reports/
 // ═══════════════════════════════════════════════════════════════════════════
 export const DashboardApi = {
   getSummary: async (): Promise<DashboardData> => {
     const { data } = await imsClient.get<IMSResponse<DashboardData>>('/api/v1/reports/dashboard/');
     return data.data;
   },
-  getSalesReport: async (params?: { date_from?: string; date_to?: string }) => {
-    const { data } = await imsClient.get('/api/v1/reports/sales/', { params });
-    return data.data;
-  },
-  getInventoryReport: async (params?: { warehouse?: number; category?: number; low_stock?: boolean }) => {
-    const { data } = await imsClient.get('/api/v1/reports/inventory/', { params });
-    return data.data;
-  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PRODUCT API — /api/v1/products/
+// PRODUCT — /api/v1/products/
 // ═══════════════════════════════════════════════════════════════════════════
 export const ProductApi = {
   getProducts: async (params?: {
@@ -152,7 +143,7 @@ export const ProductApi = {
     return data.data ?? data;
   },
 
-    deleteProduct: async (id: number): Promise<void> => {
+  deleteProduct: async (id: number): Promise<void> => {
     await imsClient.delete(`/api/v1/products/${id}/`).catch((e) => {
       if (e?.response?.status === 204) return;
       throw e;
@@ -161,27 +152,9 @@ export const ProductApi = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// INVENTORY API — /api/v1/inventory/
+// INVENTORY — /api/v1/inventory/
 // ═══════════════════════════════════════════════════════════════════════════
 export const InventoryApi = {
-  getStockLevels: async (params?: {
-    product?: number; warehouse?: number; page?: number;
-  }): Promise<PaginatedResponse<InventoryBalance>> => {
-    const { data } = await imsClient.get('/api/v1/inventory/', { params });
-    return data;
-  },
-
-  getLowStock: async (): Promise<PaginatedResponse<InventoryBalance>> => {
-    const { data } = await imsClient.get('/api/v1/inventory/low-stock/');
-    return data;
-  },
-
-  getValuation: async () => {
-    const { data } = await imsClient.get('/api/v1/inventory/valuation/');
-    return data.data ?? data;
-  },
-
-  // Payload matches backend StockAdjustmentView exactly
   adjustStock: async (payload: StockAdjustmentPayload): Promise<StockAdjustmentResponse> => {
     const { data } = await imsClient.post('/api/v1/inventory/adjust/', payload);
     return data.data ?? data;
@@ -189,7 +162,7 @@ export const InventoryApi = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CATEGORY API — /api/v1/categories/
+// CATEGORY — /api/v1/categories/
 // ═══════════════════════════════════════════════════════════════════════════
 export const CategoryApi = {
   getCategories: async (): Promise<Category[]> => {
@@ -197,7 +170,7 @@ export const CategoryApi = {
     return data.results ?? data.data ?? data;
   },
 
-      createCategory: async (payload: { name: string; parent?: number }): Promise<Category> => {
+  createCategory: async (payload: { name: string; parent?: number }): Promise<Category> => {
     const base = payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const slug = `${base}-${Date.now().toString(36)}`;
     const { data } = await imsClient.post('/api/v1/categories/', { ...payload, slug });
@@ -206,7 +179,7 @@ export const CategoryApi = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// BRAND API — /api/v1/brands/
+// BRAND — /api/v1/brands/
 // ═══════════════════════════════════════════════════════════════════════════
 export const BrandApi = {
   getBrands: async (): Promise<Brand[]> => {
@@ -221,7 +194,7 @@ export const BrandApi = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// UNIT API — /api/v1/units/
+// UNIT — /api/v1/units/
 // ═══════════════════════════════════════════════════════════════════════════
 export const UnitApi = {
   getUnits: async (): Promise<Unit[]> => {
@@ -229,29 +202,24 @@ export const UnitApi = {
     return data.results ?? data.data ?? data;
   },
 
-    createUnit: async (payload: { name: string; symbol: string }): Promise<Unit> => {
+  createUnit: async (payload: { name: string; symbol: string }): Promise<Unit> => {
     const { data } = await imsClient.post('/api/v1/units/', { ...payload, decimal_places: 0 });
     return data.data ?? data;
   },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// WAREHOUSE API — /api/v1/warehouses/
+// WAREHOUSE — /api/v1/warehouses/
 // ═══════════════════════════════════════════════════════════════════════════
 export const WarehouseApi = {
   getWarehouses: async (params?: { search?: string; is_active?: boolean }): Promise<Warehouse[]> => {
     const { data } = await imsClient.get('/api/v1/warehouses/', { params });
     return data.data ?? data.results ?? data;
   },
-
-  getWarehouse: async (id: number): Promise<Warehouse> => {
-    const { data } = await imsClient.get(`/api/v1/warehouses/${id}/`);
-    return data.data ?? data;
-  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ORDERS API — /api/v1/orders/
+// ORDERS — /api/v1/orders/
 // ═══════════════════════════════════════════════════════════════════════════
 export const OrderApi = {
   getSalesOrders: async (params?: {
@@ -267,7 +235,6 @@ export const OrderApi = {
     return data.data ?? data;
   },
 
-  // Matches backend CreateOrderSerializer
   createOrder: async (payload: CreateOrderPayload): Promise<SalesOrder> => {
     const { data } = await imsClient.post('/api/v1/orders/', payload);
     return data.data ?? data;
@@ -289,20 +256,10 @@ export const OrderApi = {
     const { data } = await imsClient.get('/api/v1/purchase-orders/', { params });
     return data;
   },
-
-  getPurchaseOrder: async (id: number): Promise<PurchaseOrder> => {
-    const { data } = await imsClient.get(`/api/v1/purchase-orders/${id}/`);
-    return data.data ?? data;
-  },
-
-  getDispatchNotes: async (params?: { status?: string; page?: number }): Promise<PaginatedResponse<DispatchNote>> => {
-    const { data } = await imsClient.get('/api/v1/dispatch/', { params });
-    return data;
-  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// NOTIFICATIONS API — /api/v1/notifications/
+// NOTIFICATIONS — /api/v1/notifications/
 // ═══════════════════════════════════════════════════════════════════════════
 export const NotificationApi = {
   getNotifications: async (params?: {
@@ -312,32 +269,13 @@ export const NotificationApi = {
     return data;
   },
 
-  getUnreadCount: async (): Promise<number> => {
-    try {
-      const { data } = await imsClient.get('/api/v1/notifications/', {
-        params: { status: 'pending', page_size: 1 },
-      });
-      return data.count ?? 0;
-    } catch { return 0; }
-  },
-
   markRead: async (ids?: number[]): Promise<void> => {
     await imsClient.post('/api/v1/notifications/mark-read/', ids?.length ? { ids } : {});
   },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SUPPLIER API — /api/v1/suppliers/
-// ═══════════════════════════════════════════════════════════════════════════
-export const SupplierApi = {
-  getSuppliers: async (params?: { search?: string }): Promise<PaginatedResponse<Supplier>> => {
-    const { data } = await imsClient.get('/api/v1/suppliers/', { params });
-    return data;
-  },
-};
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CUSTOMER API — /api/v1/customers/
+// CUSTOMER — /api/v1/customers/
 // ═══════════════════════════════════════════════════════════════════════════
 export const CustomerApi = {
   getCustomers: async (params?: { search?: string }): Promise<PaginatedResponse<Customer>> => {
@@ -362,15 +300,11 @@ export const CustomerApi = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// USER / SETTINGS API
+// USER — /api/v1/users/
 // ═══════════════════════════════════════════════════════════════════════════
 export const UserApi = {
   getMe: async (): Promise<User> => {
     const { data } = await imsClient.get<IMSResponse<User>>('/api/v1/users/me/');
     return data.data;
-  },
-  getSettings: async () => {
-    const { data } = await imsClient.get('/api/v1/settings/');
-    return data.data ?? data;
   },
 };

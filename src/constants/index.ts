@@ -44,17 +44,34 @@ export const NOTIFICATION_TYPE_LABEL: Record<string, string> = {
   general:         'General',
 };
 
-// Roles that can see admin features
-export const ADMIN_ROLES = ['ims_admin'] as const;
+// ── Role Labels 
+export const IMS_ROLE_LABELS: Record<string, string> = {
+  ims_admin:            'IMS Admin',
+  warehouse_mgr:        'Warehouse Manager',
+  branch_manager:       'Branch Manager',
+  procurement_manager:  'Procurement Manager',
+  inventory_controller: 'Inventory Controller',
+  receiving_staff:      'Receiving Staff',
+  quality_inspector:    'Quality Inspector',
+  picker:               'Picker',
+  packer:               'Packer',
+  dispatcher:           'Dispatcher',
+  fleet_manager:        'Fleet Manager',
+  driver:               'Driver',
+  ims_sales_exec:       'Sales Executive',
+  order_manager:        'Order Manager',
+  ims_customer_support: 'Customer Support',
+  ims_billing_exec:     'Billing Executive',
+  ims_accountant:       'Accountant',
+  employee:             'Employee',
+  // Legacy codes 
+  sales_executive:      'Sales Executive',
+  accountant:           'Accountant',
+};
 
-// Roles that can manage inventory operations
-export const INVENTORY_ROLES = ['ims_admin', 'warehouse_mgr', 'branch_manager'] as const;
-
-// Roles that can manage orders
-export const SALES_ROLES = ['ims_admin', 'sales_executive', 'branch_manager'] as const;
-
-// Roles that can view reports
-export const REPORT_ROLES = ['ims_admin', 'branch_manager', 'accountant'] as const;
+export function getRoleLabel(roleCode: string): string {
+  return IMS_ROLE_LABELS[roleCode] ?? roleCode;
+}
 
 export const PAGE_SIZE = 20;
 
