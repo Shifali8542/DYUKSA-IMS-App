@@ -24,6 +24,7 @@ export default function ProductFormScreen({ route, navigation }: Props) {
     loading, saving, saved,
     isEdit, handleSave,
     createCategory, createBrand, createUnit,
+    deleteCategory, deleteBrand, deleteUnit,
   } = useProductForm(productId, prefillBarcode);
 
   useEffect(() => {
@@ -113,6 +114,7 @@ export default function ProductFormScreen({ route, navigation }: Props) {
             options={categories}
             onSelect={(id) => setField('category', id)}
             onCreate={createCategory}
+            onDelete={deleteCategory}
             error={errors.category}
             createLabel="New Category"
           />
@@ -123,6 +125,7 @@ export default function ProductFormScreen({ route, navigation }: Props) {
             options={brands}
             onSelect={(id) => setField('brand', id)}
             onCreate={createBrand}
+            onDelete={deleteBrand}
             createLabel="New Brand"
           />
 
@@ -133,6 +136,7 @@ export default function ProductFormScreen({ route, navigation }: Props) {
             options={units.map((u) => ({ id: u.id, name: `${u.name} (${u.symbol})` }))}
             onSelect={(id) => setField('unit', id)}
             onCreate={createUnit}
+            onDelete={deleteUnit}
             createLabel="New Unit"
             extraField={{ placeholder: 'Symbol', label: 'Symbol' }}
           />

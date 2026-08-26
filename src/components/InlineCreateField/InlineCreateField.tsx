@@ -13,15 +13,15 @@ interface Props {
   options: Option[];
   onSelect: (id: number | null) => void;
   onCreate: (name: string) => Promise<Option | null>;
+  onDelete?: (id: number, name: string) => void;
   error?: string;
   required?: boolean;
   createLabel?: string;
-  /** For units: also need symbol */
   extraField?: { placeholder: string; label: string };
 }
 
 export default function InlineCreateField({
-  label, value, options, onSelect, onCreate, error, required,
+  label, value, options, onSelect, onCreate, onDelete, error, required,
   createLabel = 'new', extraField,
 }: Props) {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
@@ -66,6 +66,7 @@ export default function InlineCreateField({
             <TouchableOpacity
               key={opt.id}
               onPress={() => onSelect(active ? null : opt.id)}
+              onLongPress={() => onDelete && onDelete(opt.id, opt.name)}
               style={{
                 paddingHorizontal: spacing.base,
                 paddingVertical: spacing.xs,

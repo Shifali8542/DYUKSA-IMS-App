@@ -32,6 +32,8 @@ export function useInventory() {
       const res = await ProductApi.getProducts({
         search: debouncedSearch || undefined,
         category: category,
+        is_active: true,
+        ordering: '-updated_at',
         page: pageNum,
         page_size: PAGE_SIZE,
       });

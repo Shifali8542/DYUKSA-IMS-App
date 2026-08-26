@@ -117,7 +117,7 @@ export const DashboardApi = {
 export const ProductApi = {
   getProducts: async (params?: {
     search?: string; category?: number; brand?: number;
-    is_active?: boolean; page?: number; page_size?: number;
+    is_active?: boolean; ordering?: string; page?: number; page_size?: number;
   }): Promise<PaginatedResponse<Product>> => {
     const { data } = await imsClient.get('/api/v1/products/', { params });
     return data;
@@ -176,6 +176,10 @@ export const CategoryApi = {
     const { data } = await imsClient.post('/api/v1/categories/', { ...payload, slug });
     return data.data ?? data;
   },
+
+  deleteCategory: async (id: number): Promise<void> => {
+    await imsClient.delete(`/api/v1/categories/${id}/`);
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -190,6 +194,10 @@ export const BrandApi = {
   createBrand: async (payload: { name: string }): Promise<Brand> => {
     const { data } = await imsClient.post('/api/v1/brands/', payload);
     return data.data ?? data;
+  },
+
+  deleteBrand: async (id: number): Promise<void> => {
+    await imsClient.delete(`/api/v1/brands/${id}/`);
   },
 };
 
@@ -206,6 +214,10 @@ export const UnitApi = {
     const { data } = await imsClient.post('/api/v1/units/', { ...payload, decimal_places: 0 });
     return data.data ?? data;
   },
+
+  deleteUnit: async (id: number): Promise<void> => {
+    await imsClient.delete(`/api/v1/units/${id}/`);
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -215,6 +227,11 @@ export const WarehouseApi = {
   getWarehouses: async (params?: { search?: string; is_active?: boolean }): Promise<Warehouse[]> => {
     const { data } = await imsClient.get('/api/v1/warehouses/', { params });
     return data.data ?? data.results ?? data;
+  },
+
+  createWarehouse: async (payload: { name: string; code: string; address?: string; city?: string; state?: string; pincode?: string; capacity?: number }): Promise<Warehouse> => {
+    const { data } = await imsClient.post('/api/v1/warehouses/', payload);
+    return data.data ?? data;
   },
 };
 

@@ -119,7 +119,57 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
     }
   }
 
-  // ── Validation ───────────────────────────────────────────────────────────
+  // ── Inline delete callbacks ──────────────────────────────────────────────
+  function deleteCategory(id: number, name: string) {
+    Alert.alert('Delete Category', `Delete "${name}"? This only works if no products use it.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await CategoryApi.deleteCategory(id);
+            setCategories((prev) => prev.filter((c) => c.id !== id));
+            if (form.category === id) setField('category', null);
+          } catch (e: any) {
+            Alert.alert('Cannot Delete', e?.response?.data?.error?.message ?? e?.response?.data?.detail ?? 'This category is in use by products.');
+          }
+        }
+      },
+    ]);
+  }
+
+  function deleteBrand(id: number, name: string) {
+    Alert.alert('Delete Brand', `Delete "${name}"? This only works if no products use it.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await BrandApi.deleteBrand(id);
+            setBrands((prev) => prev.filter((b) => b.id !== id));
+            if (form.brand === id) setField('brand', null);
+          } catch (e: any) {
+            Alert.alert('Cannot Delete', e?.response?.data?.error?.message ?? e?.response?.data?.detail ?? 'This brand is in use by products.');
+          }
+        }
+      },
+    ]);
+  }
+
+  function deleteUnit(id: number, name: string) {
+    Alert.alert('Delete Unit', `Delete "${name}"? This only works if no products use it.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await UnitApi.deleteUnit(id);
+            setUnits((prev) => prev.filter((u) => u.id !== id));
+            if (form.unit === id) setField('unit', null);
+          } catch (e: any) {
+            Alert.alert('Cannot Delete', e?.response?.data?.error?.message ?? e?.response?.data?.detail ?? 'This unit is in use by products.');
+          }
+        }
+      },
+    ]);
+  }
   function validate(): boolean {
     const e: FormErrors = {};
     if (!form.name.trim()) e.name = 'Product name is required';
@@ -214,5 +264,6 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
     loading, saving, saved,
     isEdit, handleSave,
     createCategory, createBrand, createUnit,
+    deleteCategory, deleteBrand, deleteUnit,
   };
 }
