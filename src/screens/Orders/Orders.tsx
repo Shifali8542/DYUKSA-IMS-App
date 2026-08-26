@@ -22,12 +22,13 @@ const STATUS_FILTERS = ['all', 'draft', 'confirmed', 'dispatched', 'delivered', 
 
 export default function OrdersScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
-  const { canCreateOrders } = usePermissions();
+  const { canCreateOrders, canManagePurchasing } = usePermissions();
   const nav = useNavigation<Nav>();
   const {
     tab, changeTab, search, setSearch, status, setStatus,
     salesOrders, poOrders, loading, refreshing, error, refresh, data,
   } = useOrders();
+
 
   function SalesRow({ item }: { item: SalesOrder }) {
     return (
@@ -55,7 +56,9 @@ export default function OrdersScreen() {
 
   function PoRow({ item }: { item: PurchaseOrder }) {
     return (
-      <View style={[styles.row, { backgroundColor: colors.surface, borderRadius: borderRadius.md, padding: spacing.base, marginBottom: spacing.sm, borderColor: colors.border, borderWidth: 1 }]}>
+      <TouchableOpacity
+        onPress={() => nav.navigate('PODetail', { poId: item.id })}
+        style={[styles.row, { backgroundColor: colors.surface, borderRadius: borderRadius.md, padding: spacing.base, marginBottom: spacing.sm, borderColor: colors.border, borderWidth: 1 }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
           <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>{item.number}</Text>
           <Badge label={PO_STATUS_LABEL[item.status] ?? item.status} variant={statusVariant(item.status)} />
@@ -65,7 +68,7 @@ export default function OrdersScreen() {
           <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>{new Date(item.created_at).toLocaleDateString()}</Text>
           <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>₹{item.total}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 
@@ -135,10 +138,10 @@ export default function OrdersScreen() {
           ListEmptyComponent={<EmptyState icon="📋" title="No orders found" description="No orders match your filters." />}
         />
       )}
-      {/* FAB — Create Order */}
-      {canCreateOrders && (
+      {/* FAB — Create Order (role-gated, tab-aware) */}
+      {((tab === 'sales' && canCreateOrders) || (tab === 'purchase' && canManagePurchasing)) && (
         <TouchableOpacity
-          onPress={() => nav.navigate('OrderForm')}
+          onPress={() => nav.navigate(tab === 'sales' ? 'OrderForm' : 'POForm')}
           style={{
             position: 'absolute', bottom: 24, right: spacing.base,
             width: 56, height: 56, borderRadius: 28,

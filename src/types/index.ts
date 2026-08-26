@@ -404,4 +404,7 @@ export type MainStackParamList = {
   Customers: undefined;
   CustomerForm: { customerId?: number };
   Scanner: undefined;
+  POForm: undefined;
+  PODetail: { poId: number };
+  Suppliers: undefined;
 };

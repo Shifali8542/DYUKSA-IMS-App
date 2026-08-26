@@ -23,6 +23,9 @@ import SettingsScreen from '../screens/Settings/Settings';
 import CustomersScreen from '../screens/Customers/Customers';
 import CustomerFormScreen from '../screens/CustomerForm/CustomerForm';
 import ScannerScreen from '../screens/Scanner/scanner';
+import POFormScreen from '../screens/POForm/POForm';
+import PODetailScreen from '../screens/PODetail/PODetail';
+import SuppliersScreen from '../screens/Suppliers/Suppliers';
 
 const DRAWER_WIDTH = 280;
 
@@ -47,7 +50,7 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { canCreateCustomers } = usePermissions();
+  const { canCreateCustomers, canManagePurchasing } = usePermissions();
 
   function navigateTo(screen: string, params?: Record<string, any>) {
     closeDrawer();
@@ -63,7 +66,7 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
     { label: 'Inventory', icon: '📦', onPress: () => navigateTo('MainTabs', { screen: 'Inventory' }) },
     { label: 'Orders', icon: '📋', onPress: () => navigateTo('MainTabs', { screen: 'Orders' }) },
     { label: 'Warehouses', icon: '🏭', onPress: () => navigateTo('Warehouses') },
-    ...(canCreateCustomers ? [{ label: 'Customers', icon: '👥', onPress: () => navigateTo('Customers') }] : []),
+    ...(canManagePurchasing ? [{ label: 'Suppliers', icon: '🏢', onPress: () => navigateTo('Suppliers') }] : []),
     { label: 'Notifications', icon: '🔔', onPress: () => navigateTo('MainTabs', { screen: 'Alerts' }) },
     { label: 'My Profile', icon: '👤', onPress: () => navigateTo('Profile') },
     { label: 'Settings', icon: '⚙️', onPress: () => navigateTo('Settings') },
@@ -250,9 +253,13 @@ function MainStack({ onLogout }: Props) {
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: 'My Profile' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings' }} />
       <Stack.Screen name="Customers" component={CustomersScreen} options={{ headerShown: true, title: 'Customers' }} />
-      <Stack.Screen name="Scanner" options={{ headerShown: false, title: 'Scan Barcode' }}>
-        {(props: any) => <ScannerScreen {...props} />}
+      <Stack.Screen name="POForm" options={{ headerShown: true, title: 'Create Purchase Order' }}>
+        {(props: any) => <POFormScreen {...props} />}
       </Stack.Screen>
+      <Stack.Screen name="PODetail" options={{ headerShown: true, title: 'Purchase Order' }}>
+        {(props: any) => <PODetailScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="Suppliers" component={SuppliersScreen} options={{ headerShown: true, title: 'Suppliers' }} />
       <Stack.Screen name="CustomerForm" options={{ headerShown: true, title: 'Add Customer' }}>
         {(props: any) => <CustomerFormScreen {...props} />}
       </Stack.Screen>

@@ -7,7 +7,7 @@ import type {
   Warehouse, SalesOrder, CreateOrderPayload,
   PurchaseOrder, Notification,
   Customer, CustomerCreatePayload,
-  Category, Brand, Unit,
+  Supplier, Category, Brand, Unit,
   PaginatedResponse, IMSResponse, User,
 } from '../types';
 
@@ -266,12 +266,49 @@ export const OrderApi = {
     const { data } = await imsClient.post(`/api/v1/orders/${id}/cancel/`, { reason });
     return data.data ?? data;
   },
-
   getPurchaseOrders: async (params?: {
     status?: string; supplier?: number; page?: number;
   }): Promise<PaginatedResponse<PurchaseOrder>> => {
     const { data } = await imsClient.get('/api/v1/purchase-orders/', { params });
     return data;
+  },
+
+  getPurchaseOrder: async (id: number): Promise<PurchaseOrder> => {
+    const { data } = await imsClient.get(`/api/v1/purchase-orders/${id}/`);
+    return data.data ?? data;
+  },
+
+  createPurchaseOrder: async (payload: {
+    supplier_id: number; warehouse_id: number; order_date: string;
+    expected_date?: string; notes?: string;
+    items: { product_id: number; quantity: number; unit_price: number; tax_rate: number }[];
+  }): Promise<PurchaseOrder> => {
+    const { data } = await imsClient.post('/api/v1/purchase-orders/', payload);
+    return data.data ?? data;
+  },
+
+  transitionPO: async (id: number, status: string, reason?: string): Promise<PurchaseOrder> => {
+    const { data } = await imsClient.post(`/api/v1/purchase-orders/${id}/transition/`, { status, reason });
+    return data.data ?? data;
+  },
+
+  receivePO: async (id: number, items: { item_id: number; received_quantity: number }[]): Promise<PurchaseOrder> => {
+    const { data } = await imsClient.post(`/api/v1/purchase-orders/${id}/receive/`, { items });
+    return data.data ?? data;
+  },
+
+  getSuppliers: async (params?: { search?: string }): Promise<Supplier[]> => {
+    const { data } = await imsClient.get('/api/v1/suppliers/', { params });
+    return data.results ?? data.data ?? data;
+  },
+
+  createSupplier: async (payload: {
+    code: string; name: string; contact_name?: string; email?: string;
+    phone?: string; tax_number?: string; address?: string; city?: string;
+    state?: string; pincode?: string; payment_terms?: string;
+  }): Promise<Supplier> => {
+    const { data } = await imsClient.post('/api/v1/suppliers/', payload);
+    return data.data ?? data;
   },
 };
 

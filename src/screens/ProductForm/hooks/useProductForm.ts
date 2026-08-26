@@ -81,7 +81,7 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   }
 
-  // ── Inline create callbacks ──────────────────────────────────────────────
+  // ── Inline create callbacks 
   async function createCategory(name: string): Promise<{ id: number; name: string } | null> {
     try {
       const created = await CategoryApi.createCategory({ name });
@@ -119,7 +119,7 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
     }
   }
 
-  // ── Inline delete callbacks ──────────────────────────────────────────────
+  // ── Inline delete callbacks 
   function deleteCategory(id: number, name: string) {
     Alert.alert('Delete Category', `Delete "${name}"? This only works if no products use it.`, [
       { text: 'Cancel', style: 'cancel' },
@@ -193,7 +193,7 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
     return errorCount === 0;
   }
 
-  // ── Submit ───────────────────────────────────────────────────────────────
+  // ── Submit 
   async function handleSave(): Promise<boolean> {
     if (!validate()) return false;
 
