@@ -73,11 +73,27 @@ export default function InventoryScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { padding: spacing.base, backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
-        <Text style={[styles.title, { color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold }]}>
-          Inventory
-        </Text>
-        <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm }}>{total} products</Text>
+            <View style={[styles.header, { padding: spacing.base, backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
+        <View>
+          <Text style={[styles.title, { color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold }]}>
+            Inventory
+          </Text>
+          <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm }}>{total} products</Text>
+        </View>
+        {canCreateProducts && (
+          <TouchableOpacity
+            onPress={() => nav.navigate('BulkImport')}
+            style={{
+              backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
+              paddingHorizontal: spacing.base, paddingVertical: spacing.sm,
+              borderWidth: 1, borderColor: colors.border,
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+            }}
+          >
+            <Text style={{ fontSize: 14 }}>📤</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Import</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Search + Scan */}

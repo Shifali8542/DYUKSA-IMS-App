@@ -26,6 +26,7 @@ import ScannerScreen from '../screens/Scanner/scanner';
 import POFormScreen from '../screens/POForm/POForm';
 import PODetailScreen from '../screens/PODetail/PODetail';
 import SuppliersScreen from '../screens/Suppliers/Suppliers';
+import BulkImportScreen from '../screens/BulkImport/BulkImport';
 
 const DRAWER_WIDTH = 280;
 
@@ -260,6 +261,9 @@ function MainStack({ onLogout }: Props) {
         {(props: any) => <PODetailScreen {...props} />}
       </Stack.Screen>
       <Stack.Screen name="Suppliers" component={SuppliersScreen} options={{ headerShown: true, title: 'Suppliers' }} />
+      <Stack.Screen name="BulkImport" options={{ headerShown: true, title: 'Import Products' }}>
+        {(props: any) => <BulkImportScreen {...props} />}
+      </Stack.Screen>
       <Stack.Screen name="CustomerForm" options={{ headerShown: true, title: 'Add Customer' }}>
         {(props: any) => <CustomerFormScreen {...props} />}
       </Stack.Screen>

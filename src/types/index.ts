@@ -1,7 +1,6 @@
 // ── DYUKSA IMS Mobile — Centralized Type System ───────────────────────────
-// Mirrors the Django backend response schemas exactly.
 
-// ── Auth ─────────────────────────────────────────────────────────────────
+// ── Auth 
 export type ImsRole =
   | 'ims_admin'
   | 'warehouse_mgr'
@@ -43,7 +42,7 @@ export interface RefreshResponse {
   access: string;
 }
 
-// ── API Response wrappers ─────────────────────────────────────────────────
+// ── API Response wrappers 
 export interface IMSResponse<T> {
   success: boolean;
   data: T;
@@ -57,7 +56,7 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
-// ── User / Profile ────────────────────────────────────────────────────────
+// ── User / Profile 
 export interface User {
   id: number;
   username: string;
@@ -68,7 +67,7 @@ export interface User {
   is_active: boolean;
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────
+// ── Dashboard 
 export interface DashboardData {
   total_products: number;
   total_warehouses: number;
@@ -95,46 +94,62 @@ export interface DashboardData {
   }[];
 }
 
-// ── Product ───────────────────────────────────────────────────────────────
+// ── Product 
 export interface Product {
-  id: number;
-  name: string;
-  sku: string;
-  barcode?: string | null;
-  description?: string;
-  category: number | null;
-  category_name?: string | null;
-  brand?: number | null;
-  brand_name?: string | null;
-  unit: number;
-  unit_symbol?: string;
-  cost_price: string;
-  selling_price: string;
-  tax_rate?: string;
-  reorder_level: string;
-  is_active: boolean;
-  organisation?: number;
+  id:              number;
+  name:            string;
+  sku:             string;
+  barcode?:        string | null;
+  description?:    string;
+  category:        number | null;
+  category_name?:  string | null;
+  brand?:          number | null;
+  brand_name?:     string | null;
+  unit:            number;
+  unit_symbol?:    string;
+  cost_price:      string;
+  selling_price:   string;
+  tax_rate?:       string;
+  reorder_level:   string;
+  hsn_code?:       string;
+  image?:          string | null;
+  weight?:         string | null;
+  weight_unit?:    string;
+  length?:         string | null;
+  width?:          string | null;
+  height?:         string | null;
+  preferred_vendor?:      number | null;
+  preferred_vendor_name?: string | null;
+  is_active:       boolean;
+  organisation?:   number;
   available_stock?: string;
-  created_at: string;
-  updated_at: string;
+  created_at:      string;
+  updated_at:      string;
 }
 
 export interface ProductCreatePayload {
-  name: string;
-  sku: string;
-  category: number;
-  brand?: number | null;
-  unit: number;
-  cost_price: string;
+  name:          string;
+  sku:           string;
+  category:      number;
+  brand?:        number | null;
+  unit:          number;
+  cost_price:    string;
   selling_price: string;
   reorder_level: string;
-  tax_rate?: string;
-  is_active?: boolean;
-  description?: string;
-  barcode?: string;
+  tax_rate?:     string;
+  hsn_code?:     string;
+  weight?:       string;
+  weight_unit?:  string;
+  length?:       string;
+  width?:        string;
+  height?:       string;
+  preferred_vendor?: number | null;
+  is_active?:    boolean;
+  description?:  string;
+  barcode?:      string;
 }
 
-// ── Brand / Unit ──────────────────────────────────────────────────────────
+// ── Brand / Unit 
 export interface Brand {
   id: number;
   name: string;
@@ -148,7 +163,7 @@ export interface Unit {
   is_active: boolean;
 }
 
-// ── Inventory ─────────────────────────────────────────────────────────────
+// ── Inventory 
 export interface InventoryBalance {
   id: number;
   product: number;
@@ -231,7 +246,7 @@ export interface Category {
   is_active: boolean;
 }
 
-// ── Supplier / Customer ───────────────────────────────────────────────────
+// ── Supplier / Customer 
 export interface Supplier {
   id: number;
   code: string;
@@ -269,7 +284,7 @@ export interface CustomerCreatePayload {
   city?: string;
 }
 
-// ── Sales Order ───────────────────────────────────────────────────────────
+// ── Sales Order 
 export interface SalesOrder {
   id: number;
   order_number: string;
@@ -327,7 +342,7 @@ export interface CreateOrderPayload {
   items: CreateOrderItemPayload[];
 }
 
-// ── Purchase Order ────────────────────────────────────────────────────────
+// ── Purchase Order 
 export interface PurchaseOrder {
   id: number;
   number: string;
@@ -345,7 +360,7 @@ export interface PurchaseOrder {
   created_at: string;
 }
 
-// ── Dispatch ──────────────────────────────────────────────────────────────
+// ── Dispatch 
 export interface DispatchNote {
   id: number;
   dispatch_number: string;
@@ -359,7 +374,7 @@ export interface DispatchNote {
   created_at: string;
 }
 
-// ── Notification ──────────────────────────────────────────────────────────
+// ── Notification 
 export interface Notification {
   id: number;
   notification_type: string;
@@ -372,7 +387,7 @@ export interface Notification {
   created_at: string;
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────
+// ── Navigation 
 export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
@@ -407,4 +422,5 @@ export type MainStackParamList = {
   POForm: undefined;
   PODetail: { poId: number };
   Suppliers: undefined;
+  BulkImport:      undefined;
 };
