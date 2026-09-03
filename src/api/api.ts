@@ -1,19 +1,17 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from '../utils/tokenStorage';
 import type {
-  LoginResponse, RefreshResponse,
-  DashboardData, Product, ProductCreatePayload,
-  ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse,
-  Warehouse, SalesOrder, CreateOrderPayload,
-  PurchaseOrder, Notification,
-  Customer, CustomerCreatePayload,
-  Supplier, Category, Brand, Unit,
-  PaginatedResponse, IMSResponse, User,
+  LoginResponse, RefreshResponse, DashboardData, Product, ProductCreatePayload, ProductImage, ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse,
+  Warehouse, SalesOrder, CreateOrderPayload, PurchaseOrder, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User,
 } from '../types';
 
-// ── Base URLs — from environment
-const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'http://192.168.1.17:8001';
-const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL || 'http://192.168.1.15:8000';
+// // ── Base URLs — from environment
+// const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'https://admin.dyuksa.com';
+// const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL || 'http://172.24.246.68:8000';
+
+
+const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'https://www.dyuksa.com';
+const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL || 'http://172.24.246.68:8000';
 
 // ── Axios instances
 export const centralClient = axios.create({
@@ -24,7 +22,6 @@ export const centralClient = axios.create({
 
 export const imsClient = axios.create({
   baseURL: IMS_URL,
-  headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
 });
 
@@ -34,6 +31,16 @@ imsClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
   if (token) config.headers.Authorization = `Bearer ${token}`;
   const wsId = await tokenStorage.getWorkspaceId();
   if (wsId) config.headers['X-Workspace-ID'] = wsId;
+  // Auto Content-Type: FormData → multipart (image upload), else → JSON
+  // In React Native, FormData polyfill may fail instanceof — also check constructor name
+  const isFormData = config.data instanceof FormData
+    || (config.data && config.data.constructor && config.data.constructor.name === 'FormData');
+  if (!isFormData) {
+    config.headers['Content-Type'] = config.headers['Content-Type'] || 'application/json';
+  } else {
+    // Let axios/RN set multipart boundary automatically
+    delete config.headers['Content-Type'];
+  }
   return config;
 });
 
@@ -148,6 +155,69 @@ export const ProductApi = {
       if (e?.response?.status === 204) return;
       throw e;
     });
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRODUCT IMAGES — /api/v1/products/:id/images/
+// ═══════════════════════════════════════════════════════════════════════════
+export const ProductImageApi = {
+  getImages: async (productId: number): Promise<ProductImage[]> => {
+    const { data } = await imsClient.get(`/api/v1/products/${productId}/images/`);
+    return data.data ?? data;
+  },
+
+  upload: async (
+    productId: number,
+    file: { uri: string; name: string; type: string },
+    opts?: { alt_text?: string; sort_order?: number; is_primary?: boolean },
+  ): Promise<ProductImage> => {
+    // Use fetch instead of axios — axios breaks with RN FormData file URIs
+    const form = new FormData();
+    form.append('image', file as any);
+    if (opts?.alt_text) form.append('alt_text', opts.alt_text);
+    if (opts?.sort_order != null) form.append('sort_order', String(opts.sort_order));
+    if (opts?.is_primary) form.append('is_primary', 'true');
+
+    const token = await tokenStorage.getAccessToken();
+    const wsId = await tokenStorage.getWorkspaceId();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (wsId) headers['X-Workspace-ID'] = wsId;
+
+    const response = await fetch(`${IMS_URL}/api/v1/products/${productId}/images/`, {
+      method: 'POST',
+      headers,
+      body: form,
+    });
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw { response: { status: response.status, data: errBody }, message: errBody?.error?.message || response.statusText };
+    }
+
+    const data = await response.json();
+    return data.data ?? data;
+  },
+
+  update: async (
+    productId: number,
+    imageId: number,
+    payload: { alt_text?: string; sort_order?: number; is_primary?: boolean },
+  ): Promise<ProductImage> => {
+    const { data } = await imsClient.patch(
+      `/api/v1/products/${productId}/images/${imageId}/`,
+      payload,
+    );
+    return data.data ?? data;
+  },
+
+  delete: async (productId: number, imageId: number): Promise<void> => {
+    await imsClient.delete(`/api/v1/products/${productId}/images/${imageId}/`);
+  },
+
+  reorder: async (productId: number, order: number[]): Promise<void> => {
+    await imsClient.post(`/api/v1/products/${productId}/images/reorder/`, { order });
   },
 };
 

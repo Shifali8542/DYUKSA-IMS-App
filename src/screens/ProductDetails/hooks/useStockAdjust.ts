@@ -70,9 +70,13 @@ export function useStockAdjust(productId: number) {
       const result = await InventoryApi.adjustStock(payload);
       setLastResult(result);
 
+      const fmtQty = (v: string) => {
+        const n = parseFloat(v);
+        return isNaN(n) ? v : n % 1 === 0 ? String(Math.round(n)) : n.toFixed(2);
+      };
       Alert.alert(
         'Stock Adjusted',
-        `${form.adjustment_type === 'in' ? 'Added' : 'Removed'} ${form.quantity} units.\nOn hand now: ${result.on_hand_after}`,
+        `${form.adjustment_type === 'in' ? 'Added' : 'Removed'}: ${fmtQty(form.quantity)} units\nOn hand now: ${fmtQty(result.on_hand_after)}\nAvailable: ${fmtQty(result.available_after)}`,
         [{ text: 'OK', onPress: close }],
       );
       return true;

@@ -95,6 +95,21 @@ export interface DashboardData {
 }
 
 // ── Product 
+// ── Product Image 
+export interface ProductImage {
+  id:          number;
+  product:     number;
+  image:       string;
+  image_url:   string;
+  alt_text:    string;
+  sort_order:  number;
+  is_primary:  boolean;
+  file_size:   number;
+  width:       number | null;
+  height:      number | null;
+  created_at:  string;
+}
+
 export interface Product {
   id:              number;
   name:            string;
@@ -123,6 +138,8 @@ export interface Product {
   is_active:       boolean;
   organisation?:   number;
   available_stock?: string;
+  images?:              ProductImage[];
+  primary_image_url?:   string | null;
   created_at:      string;
   updated_at:      string;
 }

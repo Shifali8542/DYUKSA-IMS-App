@@ -28,7 +28,7 @@ export default function ProductFormScreen({ route, navigation }: Props) {
     form, setField, errors,
     categories, brands, units, suppliers,
     loading, saving, saved, isEdit,
-    handleSave, pickImage, takePhoto,
+    handleSave, pickImage, takePhoto, removeImage, cropImage,
     createCategory, createBrand, createUnit,
     deleteCategory, deleteBrand, deleteUnit,
   } = useProductForm(productId, prefillBarcode);
@@ -86,33 +86,80 @@ export default function ProductFormScreen({ route, navigation }: Props) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Product Image ── */}
-        <Card style={{ marginBottom: spacing.base, alignItems: 'center', paddingVertical: spacing.xl }}>
-          <TouchableOpacity
-            onPress={() => Alert.alert('Add Image', 'Choose source', [
-              { text: 'Camera', onPress: takePhoto },
-              { text: 'Gallery', onPress: pickImage },
-              { text: 'Cancel', style: 'cancel' },
-            ])}
-            style={{
-              width: 120, height: 120, borderRadius: borderRadius.lg,
-              backgroundColor: colors.surfaceSecondary, borderWidth: 2,
-              borderColor: colors.border, borderStyle: 'dashed',
-              alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-            }}
-          >
-            {form.image_uri ? (
-              <Image source={{ uri: form.image_uri }} style={{ width: 120, height: 120 }} resizeMode="cover" />
-            ) : (
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 36 }}>📷</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 4 }}>Add Photo</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          {form.image_uri && (
-            <TouchableOpacity onPress={() => setField('image_uri', null)} style={{ marginTop: spacing.sm }}>
-              <Text style={{ color: colors.danger, fontSize: fontSize.xs }}>Remove Image</Text>
+               {/* ── Product Image ── */}
+        <Card style={{ marginBottom: spacing.base }}>
+          <Text style={[{ fontWeight: '600', fontSize: fontSize.sm, marginBottom: spacing.sm }]}>
+            Product Images ({form.image_uris.length}/8)
+          </Text>
+
+          {/* Image grid */}
+          {form.image_uris.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: spacing.sm }}>
+              {form.image_uris.map((uri, index) => (
+                <View key={index} style={{ position: 'relative' }}>
+                  <Image
+                    source={{ uri }}
+                    style={{ width: 90, height: 90, borderRadius: 8, borderWidth: 0.5, borderColor: '#e2e8f0' }}
+                    resizeMode="cover"
+                  />
+                  {index === 0 && (
+                    <View style={{
+                      position: 'absolute', top: 4, left: 4,
+                      backgroundColor: colors.primary, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1,
+                    }}>
+                      <Text style={{ color: '#fff', fontSize: 9, fontWeight: '600' }}>PRIMARY</Text>
+                    </View>
+                  )}
+                  {/* Crop button */}
+                  {uri.startsWith('file://') && (
+                    <TouchableOpacity
+                      onPress={() => cropImage(index)}
+                      style={{
+                        position: 'absolute', bottom: 4, left: 4,
+                        backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 10,
+                        paddingHorizontal: 6, paddingVertical: 2,
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 9 }}>Crop</Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* Remove button */}
+                  <TouchableOpacity
+                    onPress={() => removeImage(index)}
+                    style={{
+                      position: 'absolute', top: -6, right: -6,
+                      width: 22, height: 22, borderRadius: 11,
+                      backgroundColor: colors.danger,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>×</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Add more button */}
+          {form.image_uris.length < 8 && (
+            <TouchableOpacity
+              onPress={() => Alert.alert('Add Image', 'Choose source', [
+                { text: 'Camera', onPress: takePhoto },
+                { text: 'Gallery', onPress: pickImage },
+                { text: 'Cancel', style: 'cancel' },
+              ])}
+              style={{
+                borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#cbd5e1',
+                borderRadius: 8, padding: 16, alignItems: 'center',
+                backgroundColor: '#f8fafc',
+              }}
+            >
+              <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary }}>
+                + Add {form.image_uris.length === 0 ? 'Images' : 'More Images'}
+              </Text>
+              <Text style={{ fontSize: fontSize.xs, color: '#94a3b8', marginTop: 2 }}>
+                JPEG, PNG, WebP — max 8 images, 5 MB each
+              </Text>
             </TouchableOpacity>
           )}
         </Card>

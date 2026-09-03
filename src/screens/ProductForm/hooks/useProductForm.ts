@@ -1,38 +1,38 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { ProductApi, CategoryApi, BrandApi, UnitApi, OrderApi, imsClient } from '../../../api/api';
+import { ProductApi, ProductImageApi, CategoryApi, BrandApi, UnitApi, OrderApi } from '../../../api/api';
 import { parseBackendError } from '../../../utils/parseError';
 import type { Category, Brand, Unit, Supplier } from '../../../types';
 
 interface FormFields {
-  name:          string;
-  sku:           string;
-  description:   string;
-  category:      number | null;
-  brand:         number | null;
-  unit:          number | null;
-  cost_price:    string;
+  name: string;
+  sku: string;
+  description: string;
+  category: number | null;
+  brand: number | null;
+  unit: number | null;
+  cost_price: string;
   selling_price: string;
   reorder_level: string;
-  tax_rate:      string;
-  hsn_code:      string;
-  barcode:       string;
-  weight:        string;
-  weight_unit:   string;
-  length:        string;
-  width:         string;
-  height:        string;
+  tax_rate: string;
+  hsn_code: string;
+  barcode: string;
+  weight: string;
+  weight_unit: string;
+  length: string;
+  width: string;
+  height: string;
   preferred_vendor: number | null;
-  is_active:     boolean;
-  image_uri:     string | null;
+  is_active: boolean;
+  image_uris: string[];
 }
 
 const EMPTY_FORM: FormFields = {
   name: '', sku: '', description: '', category: null, brand: null, unit: null,
   cost_price: '', selling_price: '', reorder_level: '', tax_rate: '', hsn_code: '',
   barcode: '', weight: '', weight_unit: 'kg', length: '', width: '', height: '',
-  preferred_vendor: null, is_active: true, image_uri: null,
+  preferred_vendor: null, is_active: true, image_uris: [],
 };
 
 type FormErrors = Partial<Record<keyof FormFields, string>>;
@@ -40,15 +40,15 @@ type FormErrors = Partial<Record<keyof FormFields, string>>;
 export function useProductForm(productId?: number, prefillBarcode?: string) {
   const isEdit = !!productId;
 
-  const [form,       setForm]       = useState<FormFields>({ ...EMPTY_FORM, barcode: prefillBarcode ?? '' });
-  const [errors,     setErrors]     = useState<FormErrors>({});
+  const [form, setForm] = useState<FormFields>({ ...EMPTY_FORM, barcode: prefillBarcode ?? '' });
+  const [errors, setErrors] = useState<FormErrors>({});
   const [categories, setCategories] = useState<Category[]>([]);
-  const [brands,     setBrands]     = useState<Brand[]>([]);
-  const [units,      setUnits]      = useState<Unit[]>([]);
-  const [suppliers,  setSuppliers]  = useState<Supplier[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
-  const [saved,      setSaved]      = useState(false);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -67,26 +67,26 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
       if (productId) {
         const product = await ProductApi.getProduct(productId);
         setForm({
-          name:          product.name,
-          sku:           product.sku,
-          description:   product.description ?? '',
-          category:      product.category,
-          brand:         product.brand ?? null,
-          unit:          product.unit,
-          cost_price:    product.cost_price,
+          name: product.name,
+          sku: product.sku,
+          description: product.description ?? '',
+          category: product.category,
+          brand: product.brand ?? null,
+          unit: product.unit,
+          cost_price: product.cost_price,
           selling_price: product.selling_price,
           reorder_level: product.reorder_level,
-          tax_rate:      product.tax_rate ?? '0.00',
-          hsn_code:      product.hsn_code ?? '',
-          barcode:       product.barcode ?? '',
-          weight:        product.weight ?? '',
-          weight_unit:   product.weight_unit ?? 'kg',
-          length:        product.length ?? '',
-          width:         product.width ?? '',
-          height:        product.height ?? '',
+          tax_rate: product.tax_rate ?? '0.00',
+          hsn_code: product.hsn_code ?? '',
+          barcode: product.barcode ?? '',
+          weight: product.weight ?? '',
+          weight_unit: product.weight_unit ?? 'kg',
+          length: product.length ?? '',
+          width: product.width ?? '',
+          height: product.height ?? '',
           preferred_vendor: product.preferred_vendor ?? null,
-          is_active:     product.is_active,
-          image_uri:     product.image ?? null,
+          is_active: product.is_active,
+          image_uris: (product.images ?? []).map((img: any) => img.image_url).filter(Boolean),
         });
       }
     } catch (e: any) {
@@ -107,12 +107,13 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
   async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
+      allowsMultipleSelection: true,
+      selectionLimit: 8,
       quality: 0.7,
     });
-    if (!result.canceled && result.assets[0]) {
-      setField('image_uri', result.assets[0].uri);
+    if (!result.canceled && result.assets.length > 0) {
+      const newUris = result.assets.map((a) => a.uri);
+      setForm((prev) => ({ ...prev, image_uris: [...prev.image_uris, ...newUris] }));
     }
   }
 
@@ -123,12 +124,36 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setForm((prev) => ({ ...prev, image_uris: [...prev.image_uris, result.assets[0].uri] }));
+    }
+  }
+
+  function removeImage(index: number) {
+    setForm((prev) => ({
+      ...prev,
+      image_uris: prev.image_uris.filter((_, i) => i !== index),
+    }));
+  }
+
+  async function cropImage(index: number) {
+    const uri = form.image_uris[index];
+    if (!uri || !uri.startsWith('file://')) return;
+    // Re-open picker with editing enabled for crop
+    const cropResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (!result.canceled && result.assets[0]) {
-      setField('image_uri', result.assets[0].uri);
+    if (!cropResult.canceled && cropResult.assets[0]) {
+      setForm((prev) => {
+        const updated = [...prev.image_uris];
+        updated[index] = cropResult.assets[0].uri;
+        return { ...prev, image_uris: updated };
+      });
     }
   }
 
@@ -173,50 +198,56 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
   function deleteCategory(id: number, name: string) {
     Alert.alert('Delete Category', `Delete "${name}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        try {
-          await CategoryApi.deleteCategory(id);
-          setCategories((prev) => prev.filter((c) => c.id !== id));
-          if (form.category === id) setField('category', null);
-        } catch (e: any) { Alert.alert('Cannot Delete', parseBackendError(e)); }
-      }},
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await CategoryApi.deleteCategory(id);
+            setCategories((prev) => prev.filter((c) => c.id !== id));
+            if (form.category === id) setField('category', null);
+          } catch (e: any) { Alert.alert('Cannot Delete', parseBackendError(e)); }
+        }
+      },
     ]);
   }
 
   function deleteBrand(id: number, name: string) {
     Alert.alert('Delete Brand', `Delete "${name}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        try {
-          await BrandApi.deleteBrand(id);
-          setBrands((prev) => prev.filter((b) => b.id !== id));
-          if (form.brand === id) setField('brand', null);
-        } catch (e: any) { Alert.alert('Cannot Delete', parseBackendError(e)); }
-      }},
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await BrandApi.deleteBrand(id);
+            setBrands((prev) => prev.filter((b) => b.id !== id));
+            if (form.brand === id) setField('brand', null);
+          } catch (e: any) { Alert.alert('Cannot Delete', parseBackendError(e)); }
+        }
+      },
     ]);
   }
 
   function deleteUnit(id: number, name: string) {
     Alert.alert('Delete Unit', `Delete "${name}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        try {
-          await UnitApi.deleteUnit(id);
-          setUnits((prev) => prev.filter((u) => u.id !== id));
-          if (form.unit === id) setField('unit', null);
-        } catch (e: any) { Alert.alert('Cannot Delete', parseBackendError(e)); }
-      }},
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await UnitApi.deleteUnit(id);
+            setUnits((prev) => prev.filter((u) => u.id !== id));
+            if (form.unit === id) setField('unit', null);
+          } catch (e: any) { Alert.alert('Cannot Delete', parseBackendError(e)); }
+        }
+      },
     ]);
   }
 
   // ── Validation ───────────────────────────────────────────────────────────
   function validate(): boolean {
     const e: FormErrors = {};
-    if (!form.name.trim())        e.name = 'Product name is required';
-    if (!form.sku.trim())         e.sku = 'SKU is required';
-    if (!form.category)           e.category = 'Category is required';
-    if (!form.unit)               e.unit = 'Unit is required';
-    if (!form.cost_price.trim())  e.cost_price = 'Cost price is required';
+    if (!form.name.trim()) e.name = 'Product name is required';
+    if (!form.sku.trim()) e.sku = 'SKU is required';
+    if (!form.category) e.category = 'Category is required';
+    if (!form.unit) e.unit = 'Unit is required';
+    if (!form.cost_price.trim()) e.cost_price = 'Cost price is required';
     else if (isNaN(Number(form.cost_price)) || Number(form.cost_price) < 0)
       e.cost_price = 'Enter a valid price';
     if (!form.selling_price.trim()) e.selling_price = 'Selling price is required';
@@ -237,25 +268,25 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
     setSaving(true);
     try {
       const payload: any = {
-        name:          form.name.trim(),
-        sku:           form.sku.trim(),
-        category:      form.category!,
-        unit:          form.unit!,
-        cost_price:    form.cost_price,
+        name: form.name.trim(),
+        sku: form.sku.trim(),
+        category: form.category!,
+        unit: form.unit!,
+        cost_price: form.cost_price,
         selling_price: form.selling_price,
         reorder_level: form.reorder_level || '0',
-        brand:         form.brand || undefined,
-        tax_rate:      form.tax_rate || '0.00',
-        hsn_code:      form.hsn_code.trim(),
-        description:   form.description.trim(),
-        barcode:       form.barcode.trim() || undefined,
-        weight:        form.weight || undefined,
-        weight_unit:   form.weight_unit || 'kg',
-        length:        form.length || undefined,
-        width:         form.width || undefined,
-        height:        form.height || undefined,
+        brand: form.brand || undefined,
+        tax_rate: form.tax_rate || '0.00',
+        hsn_code: form.hsn_code.trim(),
+        description: form.description.trim(),
+        barcode: form.barcode.trim() || undefined,
+        weight: form.weight || undefined,
+        weight_unit: form.weight_unit || 'kg',
+        length: form.length || undefined,
+        width: form.width || undefined,
+        height: form.height || undefined,
         preferred_vendor: form.preferred_vendor || undefined,
-        is_active:     form.is_active,
+        is_active: form.is_active,
       };
 
       let savedProduct;
@@ -265,19 +296,31 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
         savedProduct = await ProductApi.createProduct(payload);
       }
 
-      // Upload image if changed (new local URI)
-      if (form.image_uri && form.image_uri.startsWith('file://')) {
-        try {
-          const imageForm = new FormData();
-          imageForm.append('image', {
-            uri: form.image_uri,
-            name: 'product.jpg',
-            type: 'image/jpeg',
-          } as any);
-          await imsClient.patch(`/api/v1/products/${savedProduct.id}/`, imageForm, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
-        } catch { /* Image upload failed silently — product still saved */ }
+      // Upload all new images (file:// = new from device, http = already on server)
+      const newImages = form.image_uris.filter((uri) => uri.startsWith('file://'));
+      if (newImages.length > 0) {
+        const mimeMap: Record<string, string> = {
+          jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+          webp: 'image/webp', gif: 'image/gif',
+        };
+        let uploadFailed = 0;
+        for (let i = 0; i < newImages.length; i++) {
+          try {
+            const uri = newImages[i];
+            const ext = uri.split('.').pop()?.toLowerCase() ?? 'jpg';
+            await ProductImageApi.upload(savedProduct.id, {
+              uri,
+              name: `product_${savedProduct.id}_${i}.${ext}`,
+              type: mimeMap[ext] || 'image/jpeg',
+            }, { is_primary: i === 0 && !isEdit });
+          } catch (imgErr: any) {
+            uploadFailed++;
+            console.warn('IMAGE UPLOAD FAILED:', imgErr?.response?.status, imgErr?.response?.data ?? imgErr?.message);
+          }
+        }
+        if (uploadFailed > 0) {
+          Alert.alert('Warning', `${uploadFailed} of ${newImages.length} image(s) failed to upload. Product was saved.`);
+        }
       }
 
       setSaved(true);
@@ -310,7 +353,7 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
     form, setField, errors,
     categories, brands, units, suppliers,
     loading, saving, saved, isEdit,
-    handleSave, pickImage, takePhoto,
+    handleSave, pickImage, takePhoto, removeImage, cropImage,
     createCategory, createBrand, createUnit,
     deleteCategory, deleteBrand, deleteUnit,
   };

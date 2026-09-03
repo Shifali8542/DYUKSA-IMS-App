@@ -39,6 +39,12 @@ export default function LoginScreen({ onAuthenticated }: Props) {
       await tokenStorage.setTokens(tokens.access, tokens.refresh);
       onAuthenticated();
     } catch (err: any) {
+      console.log("=== LOGIN ERROR ===");
+      console.log("Status Code:", err.response?.status);
+      console.log("Error Data:", JSON.stringify(err.response?.data, null, 2));
+      console.log("Network Message:", err.message);
+      console.log("===================");
+      
       const msg = err?.response?.data?.message
         ?? err?.response?.data?.detail
         ?? 'Incorrect username or password.';

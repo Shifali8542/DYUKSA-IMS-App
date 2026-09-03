@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { styles } from './ProductDetails.styles';
 import {
   SafeAreaView
@@ -17,13 +17,22 @@ import Badge from '../../components/Badge/Badge';
 import Card from '../../components/Card/Card';
 import type { MainStackParamList } from '../../types';
 
+
 type Props = NativeStackScreenProps<MainStackParamList, 'ProductDetails'>;
+
+/** Format backend decimal strings: 2.000 → "2", 2.500 → "2.5", 2.123 → "2.12" */
+const fmtQty = (v: string | number | undefined): string => {
+  const n = parseFloat(String(v ?? '0'));
+  if (isNaN(n)) return '0';
+  if (n % 1 === 0) return String(Math.round(n));
+  return n.toFixed(2).replace(/0$/, '');
+};
 
 export default function ProductDetailsScreen({ route, navigation }: Props) {
   const { productId } = route.params;
   const { canEditProducts, canDeleteProducts, canAdjustStock } = usePermissions();
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
-  const { product, stockLevels, loading, error, refresh } = useProductDetails(productId);
+  const { product, stockLevels, images, loading, error, refresh } = useProductDetails(productId);
   const adjust = useStockAdjust(productId);
   const [deleting, setDeleting] = useState(false);
 
@@ -126,9 +135,17 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
         {/* Hero */}
         <Card style={{ marginBottom: spacing.base }}>
           <View style={styles.hero}>
-            <View style={[styles.avatar, { backgroundColor: colors.primaryLight, borderRadius: borderRadius.md }]}>
-              <Text style={{ fontSize: 32 }}>📦</Text>
-            </View>
+            {images.length > 0 && images[0].image_url ? (
+              <Image
+                source={{ uri: images[0].image_url }}
+                style={{ width: 72, height: 72, borderRadius: borderRadius.md }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: colors.primaryLight, borderRadius: borderRadius.md }]}>
+                <Text style={{ fontSize: 32 }}>📦</Text>
+              </View>
+            )}
             <View style={{ flex: 1, marginLeft: spacing.base }}>
               <Text style={{ color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold }}>{product.name}</Text>
               <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm, marginTop: 2 }}>SKU: {product.sku}</Text>
@@ -148,13 +165,13 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <View style={{ flex: 1, backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md, padding: spacing.base, alignItems: 'center' }}>
               <Text style={{ color: isLow ? colors.danger : colors.success, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>
-                {product.available_stock ?? '0'}
+                {fmtQty(product.available_stock)}
               </Text>
               <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: 2 }}>Available</Text>
             </View>
             <View style={{ flex: 1, backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md, padding: spacing.base, alignItems: 'center' }}>
               <Text style={{ color: colors.warning, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>
-                {product.reorder_level}
+                {fmtQty(product.reorder_level)}
               </Text>
               <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: 2 }}>Reorder Level</Text>
             </View>
@@ -184,10 +201,10 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={{ color: sl.is_low_stock ? colors.danger : colors.textPrimary, fontSize: fontSize.base, fontWeight: fontWeight.bold }}>
-                    {sl.on_hand}
+                    {fmtQty(sl.on_hand)}
                   </Text>
                   <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>
-                    Rsv: {sl.reserved} · Avl: {sl.available}
+                    Rsv: {fmtQty(sl.reserved)} · Avl: {fmtQty(sl.available)}
                   </Text>
                 </View>
               </TouchableOpacity>
