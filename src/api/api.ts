@@ -5,13 +5,12 @@ import type {
   Warehouse, SalesOrder, CreateOrderPayload, PurchaseOrder, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User,
 } from '../types';
 
-// // ── Base URLs — from environment
-// const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'https://admin.dyuksa.com';
+// Base URLs — from environment
+const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'http://192.168.1.17:8001';
+const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL || 'http://192.168.1.15:8000';
+
+// const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'https://www.dyuksa.com';
 // const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL || 'http://172.24.246.68:8000';
-
-
-const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'https://www.dyuksa.com';
-const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL || 'http://172.24.246.68:8000';
 
 // ── Axios instances
 export const centralClient = axios.create({
@@ -25,14 +24,12 @@ export const imsClient = axios.create({
   timeout: 15000,
 });
 
-// ── Request interceptor: attach Bearer token ──────────────────────────────
+// ── Request interceptor: attach Bearer token 
 imsClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const token = await tokenStorage.getAccessToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   const wsId = await tokenStorage.getWorkspaceId();
   if (wsId) config.headers['X-Workspace-ID'] = wsId;
-  // Auto Content-Type: FormData → multipart (image upload), else → JSON
-  // In React Native, FormData polyfill may fail instanceof — also check constructor name
   const isFormData = config.data instanceof FormData
     || (config.data && config.data.constructor && config.data.constructor.name === 'FormData');
   if (!isFormData) {
@@ -44,7 +41,7 @@ imsClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
   return config;
 });
 
-// ── Response interceptor: auto-refresh on 401 ────────────────────────────
+// ── Response interceptor
 let isRefreshing = false;
 let pendingQueue: Array<(token: string | null) => void> = [];
 

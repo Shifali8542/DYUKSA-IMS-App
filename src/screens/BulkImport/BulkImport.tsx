@@ -13,7 +13,10 @@ type Props = NativeStackScreenProps<MainStackParamList, 'BulkImport'>;
 
 export default function BulkImportScreen({ navigation }: Props) {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
-  const { status, file, result, error, pickFile, upload, reset } = useBulkImport();
+  const {
+    status, file, result, preview, error, mode, progress,
+    pickFile, dryRun, upload, reset, setMode, downloadTemplate,
+  } = useBulkImport();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
@@ -69,6 +72,34 @@ export default function BulkImportScreen({ navigation }: Props) {
               <Text style={{ color: colors.primary, fontSize: fontSize.xs }}>
                 💡 Categories, brands, and units are auto-created if they don't exist. SKU is auto-generated from product name if not provided.
               </Text>
+            </View>
+
+            {/* Download template */}
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.base }}>
+              <TouchableOpacity
+                onPress={() => downloadTemplate('csv')}
+                style={{
+                  flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: colors.background, borderRadius: borderRadius.md,
+                  paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border,
+                }}
+              >
+                <Text style={{ color: colors.primary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
+                  ⬇ CSV Template
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => downloadTemplate('xlsx')}
+                style={{
+                  flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: colors.background, borderRadius: borderRadius.md,
+                  paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border,
+                }}
+              >
+                <Text style={{ color: colors.primary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
+                  ⬇ Excel Template
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Card>
@@ -135,15 +166,133 @@ export default function BulkImportScreen({ navigation }: Props) {
           )}
         </Card>
 
-        {/* Upload button */}
+        {/* Import mode picker */}
         {file && status !== 'done' && (
-          <Button
-            title={status === 'uploading' ? 'Importing...' : 'Import Products'}
-            onPress={upload}
-            loading={status === 'uploading'}
-            fullWidth
-            size="lg"
-          />
+          <Card style={{ marginBottom: spacing.base }}>
+            <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, marginBottom: spacing.sm }}>
+              Import Mode
+            </Text>
+            {([
+              { key: 'create', label: 'Create new products only', desc: 'Skip if SKU exists' },
+              { key: 'update', label: 'Update existing only', desc: 'Skip if SKU not found' },
+              { key: 'upsert', label: 'Create + Update both', desc: 'Best for syncing data' },
+            ] as const).map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                onPress={() => setMode(opt.key)}
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  paddingVertical: spacing.sm, paddingHorizontal: spacing.sm,
+                  borderRadius: borderRadius.md, marginBottom: spacing.xs,
+                  backgroundColor: mode === opt.key ? colors.primaryLight : 'transparent',
+                  borderWidth: 1,
+                  borderColor: mode === opt.key ? colors.primary : colors.border,
+                }}
+              >
+                <View style={{
+                  width: 20, height: 20, borderRadius: 10,
+                  borderWidth: 2, borderColor: mode === opt.key ? colors.primary : colors.border,
+                  alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm,
+                }}>
+                  {mode === opt.key && (
+                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
+                    {opt.label}
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 1 }}>
+                    {opt.desc}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </Card>
+        )}
+
+        {/* Preview + Upload buttons */}
+        {file && status !== 'done' && (
+          <View style={{ gap: spacing.sm }}>
+            {!preview && (
+              <Button
+                title={status === 'previewing' ? 'Validating...' : 'Preview Import'}
+                onPress={dryRun}
+                loading={status === 'previewing'}
+                variant="outline"
+                fullWidth
+                size="lg"
+              />
+            )}
+            {preview && preview.errors.length === 0 && (
+              <Button
+                title={status === 'uploading' ? 'Importing...' : 'Confirm Import'}
+                onPress={upload}
+                loading={status === 'uploading'}
+                fullWidth
+                size="lg"
+              />
+            )}
+            {preview && preview.errors.length > 0 && (
+              <View style={{ gap: spacing.sm }}>
+                <Button
+                  title={status === 'uploading' ? 'Importing...' : 'Import Anyway (skip errors)'}
+                  onPress={upload}
+                  loading={status === 'uploading'}
+                  variant="outline"
+                  fullWidth
+                  size="lg"
+                />
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Upload progress bar */}
+        {status === 'uploading' && progress > 0 && (
+          <View style={{ marginTop: spacing.sm }}>
+            <View style={{
+              height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden',
+            }}>
+              <View style={{
+                height: 6, width: `${progress}%`, backgroundColor: colors.primary, borderRadius: 3,
+              }} />
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 10, textAlign: 'center', marginTop: 4 }}>
+              {progress}% uploaded
+            </Text>
+          </View>
+        )}
+
+        {/* Dry-run preview result */}
+        {preview && status !== 'done' && (
+          <Card style={{ marginTop: spacing.base, borderWidth: 1, borderColor: colors.primary }}>
+            <Text style={{ color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, marginBottom: spacing.sm }}>
+              Preview Summary (nothing saved yet)
+            </Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
+              <StatBox label="Will Create" value={preview.will_create ?? 0} color="#10B981" bgColor="#ECFDF5" />
+              <StatBox label="Will Update" value={preview.will_update ?? 0} color="#3B82F6" bgColor="#EFF6FF" />
+              <StatBox label="Will Skip" value={preview.will_skip ?? 0} color="#F59E0B" bgColor="#FFFBEB" />
+            </View>
+            {preview.errors.length > 0 && (
+              <View style={{ marginTop: spacing.xs }}>
+                <Text style={{ color: colors.danger, fontSize: fontSize.xs, fontWeight: fontWeight.semibold, marginBottom: spacing.xs }}>
+                  Errors found ({preview.errors.length})
+                </Text>
+                {preview.errors.slice(0, 10).map((err, idx) => (
+                  <Text key={idx} style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 2 }}>
+                    Row {err.row}{err.sku ? ` (${err.sku})` : ''}: {err.error}
+                  </Text>
+                ))}
+                {preview.errors.length > 10 && (
+                  <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 4 }}>
+                    ...and {preview.errors.length - 10} more
+                  </Text>
+                )}
+              </View>
+            )}
+          </Card>
         )}
 
         {/* Error */}
@@ -169,7 +318,7 @@ export default function BulkImportScreen({ navigation }: Props) {
             {/* Stats row */}
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.base }}>
               <StatBox
-                label="Total Rows"
+                label="Total"
                 value={result.total_rows}
                 color={colors.textPrimary}
                 bgColor={colors.surfaceSecondary}
@@ -181,6 +330,12 @@ export default function BulkImportScreen({ navigation }: Props) {
                 bgColor="#ECFDF5"
               />
               <StatBox
+                label="Updated"
+                value={result.updated}
+                color="#3B82F6"
+                bgColor="#EFF6FF"
+              />
+              <StatBox
                 label="Skipped"
                 value={result.skipped}
                 color={result.skipped > 0 ? '#F59E0B' : colors.textSecondary}
@@ -189,10 +344,10 @@ export default function BulkImportScreen({ navigation }: Props) {
             </View>
 
             {/* Success message */}
-            {result.created > 0 && (
+            {(result.created > 0 || result.updated > 0) && (
               <Card style={{ marginBottom: spacing.base, borderWidth: 1, borderColor: '#10B981' }}>
                 <Text style={{ color: '#10B981', fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>
-                  ✅ {result.created} product{result.created !== 1 ? 's' : ''} imported successfully!
+                  ✅ {result.created} created, {result.updated} updated successfully!
                 </Text>
               </Card>
             )}
