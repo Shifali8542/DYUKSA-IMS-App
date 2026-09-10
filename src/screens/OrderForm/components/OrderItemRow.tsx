@@ -7,24 +7,25 @@ import type { Product } from '../../../types';
 import type { OrderLineItem } from '../hooks/useOrderForm';
 
 interface Props {
-  item:          OrderLineItem;
-  products:      Product[];
-  error?:        string;
+  item: OrderLineItem;
+  products: Product[];
+  onSearchProducts: (query: string) => void;
+  error?: string;
   onSelectProduct: (key: string, productId: number) => void;
-  onUpdate:      (key: string, field: keyof OrderLineItem, value: any) => void;
-  onRemove:      (key: string) => void;
-  canRemove:     boolean;
+  onUpdate: (key: string, field: keyof OrderLineItem, value: any) => void;
+  onRemove: (key: string) => void;
+  canRemove: boolean;
 }
 
-export default function OrderItemRow({ item, products, error, onSelectProduct, onUpdate, onRemove, canRemove }: Props) {
+export default function OrderItemRow({ item, products, onSearchProducts, error, onSelectProduct, onUpdate, onRemove, canRemove }: Props) {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const [showPicker, setShowPicker] = useState(false);
   const [search, setSearch] = useState('');
 
-  const filtered = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.sku.toLowerCase().includes(search.toLowerCase())
-  );
+  function handleSearch(text: string) {
+    setSearch(text);
+    onSearchProducts(text);
+  }
 
   const lineTotal = ((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0)).toFixed(2);
 
@@ -36,7 +37,7 @@ export default function OrderItemRow({ item, products, error, onSelectProduct, o
     }}>
       {/* Product Selector */}
       <TouchableOpacity
-        onPress={() => setShowPicker(true)}
+        onPress={() => { setShowPicker(true); onSearchProducts(''); }}
         style={{
           backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
           padding: spacing.md, marginBottom: spacing.sm,
@@ -96,7 +97,7 @@ export default function OrderItemRow({ item, products, error, onSelectProduct, o
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
         >
           <Pressable
-            onPress={() => {}}
+            onPress={() => { }}
             style={{
               backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20,
               maxHeight: '70%', padding: spacing.base,
@@ -105,9 +106,9 @@ export default function OrderItemRow({ item, products, error, onSelectProduct, o
             <Text style={{ color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginBottom: spacing.base }}>
               Select Product
             </Text>
-            <SearchBar value={search} onChangeText={setSearch} placeholder="Search by name or SKU..." />
+            <SearchBar value={search} onChangeText={handleSearch} placeholder="Search by name or SKU..." />
             <FlatList
-              data={filtered}
+              data={products}
               keyExtractor={(p) => String(p.id)}
               style={{ marginTop: spacing.sm }}
               renderItem={({ item: prod }) => (

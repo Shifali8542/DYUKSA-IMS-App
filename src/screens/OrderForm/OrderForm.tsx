@@ -18,7 +18,7 @@ export default function OrderFormScreen({ navigation }: Props) {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const {
     form, setField, items, errors,
-    customers, warehouses, products,
+    customers, warehouses, products, searchProducts,
     loading, saving, saved,
     updateItem, selectProduct, addItem, removeItem,
     getSubtotal, handleSave,
@@ -172,6 +172,7 @@ export default function OrderFormScreen({ navigation }: Props) {
               key={item.key}
               item={item}
               products={products}
+              onSearchProducts={searchProducts}
               error={errors[`item_${item.key}`]}
               onSelectProduct={selectProduct}
               onUpdate={updateItem}

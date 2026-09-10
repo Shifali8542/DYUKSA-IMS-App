@@ -2,7 +2,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from '../utils/tokenStorage';
 import type {
   LoginResponse, RefreshResponse, DashboardData, Product, ProductCreatePayload, ProductImage, ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse,
-  Warehouse, SalesOrder, CreateOrderPayload, PurchaseOrder, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User,
+  Warehouse, SalesOrder, CreateOrderPayload, PurchaseOrder, Invoice, InvoicePayment, InvoiceSettings, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User,
 } from '../types';
 
 // Base URLs — from environment
@@ -218,6 +218,62 @@ export const ProductImageApi = {
   },
 };
 
+
+export const InvoiceApi = {
+  getInvoices: async (params?: {
+    status?: string; search?: string; page?: number;
+  }): Promise<PaginatedResponse<Invoice>> => {
+    const { data } = await imsClient.get('/api/v1/invoices/', { params });
+    return data;
+  },
+
+  createInvoice: async (payload: {
+    customer: number;
+    invoice_date: string;
+    due_date: string;
+    notes?: string;
+    items: { product: number; description: string; quantity: string; unit_price: string; discount: string; tax_rate: string }[];
+  }): Promise<Invoice> => {
+    const { data } = await imsClient.post('/api/v1/invoices/', payload);
+    return data.data ?? data;
+  },
+  getInvoice: async (id: number): Promise<Invoice> => {
+    const { data } = await imsClient.get(`/api/v1/invoices/${id}/`);
+    return data.data ?? data;
+  },
+
+  createFromOrder: async (payload: {
+    sales_order_id: number; invoice_date: string; due_date: string;
+  }): Promise<Invoice> => {
+    const { data } = await imsClient.post('/api/v1/invoices/from-order/', payload);
+    return data.data ?? data;
+  },
+
+  recordPayment: async (invoiceId: number, payload: {
+    amount: string; payment_date: string; method: string;
+    transaction_reference?: string; notes?: string;
+  }): Promise<InvoicePayment> => {
+    const { data } = await imsClient.post(`/api/v1/invoices/${invoiceId}/record-payment/`, payload);
+    return data.data ?? data;
+  },
+};
+
+export const InvoiceSettingsApi = {
+  getSettings: async (): Promise<InvoiceSettings> => {
+    const { data } = await imsClient.get('/api/v1/invoices/settings/');
+    return data.data ?? data;
+  },
+
+  updateSettings: async (payload: Partial<InvoiceSettings>): Promise<InvoiceSettings> => {
+    const settings = await InvoiceSettingsApi.getSettings();
+    const { data } = await imsClient.put(
+      `/api/v1/invoices/settings/${settings.organisation}/`,
+      payload,
+    );
+    return data.data ?? data;
+  },
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // INVENTORY — /api/v1/inventory/
 // ═══════════════════════════════════════════════════════════════════════════
@@ -333,6 +389,18 @@ export const OrderApi = {
     const { data } = await imsClient.post(`/api/v1/orders/${id}/cancel/`, { reason });
     return data.data ?? data;
   },
+
+  generateInvoice: async (orderId: number): Promise<any> => {
+    const today = new Date().toISOString().split('T')[0];
+    const due = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+    const { data } = await imsClient.post('/api/v1/invoices/from-order/', {
+      sales_order_id: orderId,
+      invoice_date: today,
+      due_date: due,
+    });
+    return data.data ?? data;
+  },
+
   getPurchaseOrders: async (params?: {
     status?: string; supplier?: number; page?: number;
   }): Promise<PaginatedResponse<PurchaseOrder>> => {

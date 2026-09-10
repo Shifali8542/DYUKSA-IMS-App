@@ -1,5 +1,3 @@
-// ── DYUKSA IMS Mobile — Centralized Type System ───────────────────────────
-
 // ── Auth 
 export type ImsRole =
   | 'ims_admin'
@@ -97,73 +95,73 @@ export interface DashboardData {
 // ── Product 
 // ── Product Image 
 export interface ProductImage {
-  id:          number;
-  product:     number;
-  image:       string;
-  image_url:   string;
-  alt_text:    string;
-  sort_order:  number;
-  is_primary:  boolean;
-  file_size:   number;
-  width:       number | null;
-  height:      number | null;
-  created_at:  string;
+  id: number;
+  product: number;
+  image: string;
+  image_url: string;
+  alt_text: string;
+  sort_order: number;
+  is_primary: boolean;
+  file_size: number;
+  width: number | null;
+  height: number | null;
+  created_at: string;
 }
 
 export interface Product {
-  id:              number;
-  name:            string;
-  sku:             string;
-  barcode?:        string | null;
-  description?:    string;
-  category:        number | null;
-  category_name?:  string | null;
-  brand?:          number | null;
-  brand_name?:     string | null;
-  unit:            number;
-  unit_symbol?:    string;
-  cost_price:      string;
-  selling_price:   string;
-  tax_rate?:       string;
-  reorder_level:   string;
-  hsn_code?:       string;
-  image?:          string | null;
-  weight?:         string | null;
-  weight_unit?:    string;
-  length?:         string | null;
-  width?:          string | null;
-  height?:         string | null;
-  preferred_vendor?:      number | null;
+  id: number;
+  name: string;
+  sku: string;
+  barcode?: string | null;
+  description?: string;
+  category: number | null;
+  category_name?: string | null;
+  brand?: number | null;
+  brand_name?: string | null;
+  unit: number;
+  unit_symbol?: string;
+  cost_price: string;
+  selling_price: string;
+  tax_rate?: string;
+  reorder_level: string;
+  hsn_code?: string;
+  image?: string | null;
+  weight?: string | null;
+  weight_unit?: string;
+  length?: string | null;
+  width?: string | null;
+  height?: string | null;
+  preferred_vendor?: number | null;
   preferred_vendor_name?: string | null;
-  is_active:       boolean;
-  organisation?:   number;
+  is_active: boolean;
+  organisation?: number;
   available_stock?: string;
-  images?:              ProductImage[];
-  primary_image_url?:   string | null;
-  created_at:      string;
-  updated_at:      string;
+  images?: ProductImage[];
+  primary_image_url?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProductCreatePayload {
-  name:          string;
-  sku:           string;
-  category:      number;
-  brand?:        number | null;
-  unit:          number;
-  cost_price:    string;
+  name: string;
+  sku: string;
+  category: number;
+  brand?: number | null;
+  unit: number;
+  cost_price: string;
   selling_price: string;
   reorder_level: string;
-  tax_rate?:     string;
-  hsn_code?:     string;
-  weight?:       string;
-  weight_unit?:  string;
-  length?:       string;
-  width?:        string;
-  height?:       string;
+  tax_rate?: string;
+  hsn_code?: string;
+  weight?: string;
+  weight_unit?: string;
+  length?: string;
+  width?: string;
+  height?: string;
   preferred_vendor?: number | null;
-  is_active?:    boolean;
-  description?:  string;
-  barcode?:      string;
+  is_active?: boolean;
+  description?: string;
+  barcode?: string;
 }
 
 // ── Brand / Unit 
@@ -241,7 +239,7 @@ export interface StockAdjustmentResponse {
   available_after: string;
 }
 
-// ── Warehouse / Category ──────────────────────────────────────────────────
+// ── Warehouse / Category 
 export interface Warehouse {
   id: number;
   name: string;
@@ -305,6 +303,8 @@ export interface CustomerCreatePayload {
 export interface SalesOrder {
   id: number;
   order_number: string;
+  invoice_id: number | null;
+  invoice_number: string | null;
   customer: number;
   customer_name?: string;
   customer_code?: string;
@@ -439,5 +439,108 @@ export type MainStackParamList = {
   POForm: undefined;
   PODetail: { poId: number };
   Suppliers: undefined;
-  BulkImport:      undefined;
+  BulkImport: undefined;
+  Invoices: undefined;
+  InvoiceDetail: { invoiceId: number };
+  InvoicePreview: { invoiceId: number };
+  InvoiceSettingsScreen: undefined;
+  InvoiceForm: undefined;
 };
+
+// ── Invoices 
+export type InvoiceStatus = 'draft' | 'finalized' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled';
+
+export interface InvoiceItem {
+  id: number;
+  product: number;
+  product_name: string;
+  product_sku: string;
+  description: string;
+  quantity: string;
+  unit_price: string;
+  discount: string;
+  tax_rate: string;
+  line_total: string;
+}
+
+export interface InvoicePayment {
+  id: number;
+  number: string;
+  invoice: number;
+  invoice_number: string;
+  payment_date: string;
+  amount: string;
+  method: string;
+  method_display: string;
+  transaction_reference: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface InvoiceCreditNote {
+  id: number;
+  number: string;
+  invoice: number;
+  invoice_number: string;
+  issue_date: string;
+  amount: string;
+  reason: string;
+  created_at: string;
+}
+
+export interface Invoice {
+  id: number;
+  organisation: number;
+  number: string;
+  sales_order: number | null;
+  sales_order_number: string | null;
+  customer: number;
+  customer_name: string;
+  status: InvoiceStatus;
+  status_display: string;
+  invoice_date: string;
+  due_date: string;
+  subtotal: string;
+  discount_total: string;
+  tax_total: string;
+  other_charges: string;
+  total: string;
+  paid_amount: string;
+  balance_due: string;
+  notes: string;
+  items: InvoiceItem[];
+  payments: InvoicePayment[];
+  credit_notes: InvoiceCreditNote[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceSettings {
+  organisation: number;
+  company_name: string;
+  display_name: string;
+  logo_url: string;
+  tagline: string;
+  address_line1: string;
+  address_line2: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  phone: string;
+  email: string;
+  website: string;
+  gstin: string;
+  pan: string;
+  cin: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_ifsc: string;
+  bank_branch: string;
+  terms_and_conditions: string;
+  payment_instructions: string;
+  default_due_days: number;
+  invoice_prefix: string;
+  invoice_footer_note: string;
+  full_address: string;
+}

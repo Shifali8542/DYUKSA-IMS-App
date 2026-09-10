@@ -1,23 +1,40 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OrderApi } from '../../../api/api';
 import { ORDER_STATUS_LABEL } from '../../../constants';
-import type { SalesOrder } from '../../../types';
+import type { SalesOrder, MainStackParamList } from '../../../types';
 
-// Backend has specific confirm/cancel endpoints
-const NEXT_ACTIONS: Record<string, { label: string; action: 'confirm' | 'cancel'; variant: 'primary' | 'danger' }[]> = {
-  draft:     [{ label: 'Confirm', action: 'confirm', variant: 'primary' }, { label: 'Cancel', action: 'cancel', variant: 'danger' }],
-  confirmed: [{ label: 'Cancel', action: 'cancel', variant: 'danger' }],
-  packed:    [],
-  dispatched:[],
-  delivered: [],
-  cancelled: [],
-};
+
+function getActions(order: SalesOrder | null) {
+  if (!order) return [];
+
+  const hasInvoice = order.invoice_id !== null;
+  const actions: { label: string; action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice'; variant: 'primary' | 'danger' }[] = [];
+
+  if (order.status === 'draft') {
+    actions.push({ label: 'Confirm', action: 'confirm', variant: 'primary' });
+    actions.push({ label: 'Cancel', action: 'cancel', variant: 'danger' });
+  } else if (['confirmed', 'packed', 'dispatched', 'delivered'].includes(order.status)) {
+    if (hasInvoice) {
+      actions.push({ label: `View Invoice ${order.invoice_number ?? ''}`, action: 'view_invoice', variant: 'primary' });
+    } else {
+      actions.push({ label: 'Generate Invoice', action: 'invoice', variant: 'primary' });
+    }
+    if (order.status === 'confirmed') {
+      actions.push({ label: 'Cancel', action: 'cancel', variant: 'danger' });
+    }
+  }
+
+  return actions;
+}
 
 export function useOrderDetail(orderId: number) {
-  const [order,         setOrder]         = useState<SalesOrder | null>(null);
-  const [loading,       setLoading]       = useState(true);
-  const [error,         setError]         = useState<string | null>(null);
+  const nav = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const [order, setOrder] = useState<SalesOrder | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
 
   const fetchOrder = useCallback(async () => {
@@ -35,8 +52,41 @@ export function useOrderDetail(orderId: number) {
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
-  function handleAction(action: 'confirm' | 'cancel') {
+  function handleAction(action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice') {
     if (!order) return;
+
+    if (action === 'view_invoice') {
+      if (order.invoice_id) {
+        nav.navigate('InvoiceDetail', { invoiceId: order.invoice_id });
+      }
+      return;
+    }
+
+    if (action === 'invoice') {
+      Alert.alert('Generate Invoice?', `Create an invoice for order ${order.order_number}?`, [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Generate',
+          onPress: async () => {
+            setTransitioning(true);
+            try {
+              const invoice = await OrderApi.generateInvoice(order.id);
+              Alert.alert('Invoice Created', `Invoice ${invoice.number} generated.`, [
+                { text: 'View Invoice', onPress: () => nav.navigate('InvoiceDetail', { invoiceId: invoice.id }) },
+                { text: 'Stay Here', style: 'cancel' },
+              ]);
+              await fetchOrder();
+            } catch (e: any) {
+              Alert.alert('Error', e?.response?.data?.message ?? e?.response?.data?.error?.message ?? 'Failed to generate invoice.');
+            } finally {
+              setTransitioning(false);
+            }
+          },
+        },
+      ]);
+      return;
+    }
+
     const label = action === 'confirm' ? 'Confirm' : 'Cancel';
     Alert.alert(`${label} this order?`, 'This action cannot be undone.', [
       { text: 'No', style: 'cancel' },
@@ -51,7 +101,8 @@ export function useOrderDetail(orderId: number) {
               : await OrderApi.cancelOrder(order.id);
             setOrder(updated ?? { ...order, status: action === 'confirm' ? 'confirmed' : 'cancelled' });
           } catch (e: any) {
-            Alert.alert('Error', e?.response?.data?.message ?? e?.response?.data?.error?.message ?? 'Failed to update status.');
+            const errMsg = e?.response?.data?.message ?? e?.response?.data?.error?.message ?? e?.response?.data?.error ?? JSON.stringify(e?.response?.data) ?? 'Failed to update status.';
+            Alert.alert('Error', errMsg);
           } finally {
             setTransitioning(false);
           }
@@ -60,7 +111,7 @@ export function useOrderDetail(orderId: number) {
     ]);
   }
 
-  const actions = order ? (NEXT_ACTIONS[order.status] ?? []) : [];
+  const actions = getActions(order);
 
   return { order, loading, error, transitioning, actions, handleAction, refresh: fetchOrder };
 }

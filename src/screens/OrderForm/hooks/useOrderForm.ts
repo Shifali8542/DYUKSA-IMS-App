@@ -7,22 +7,22 @@ import type {
 } from '../../../types';
 
 export interface OrderLineItem {
-  key:        string;
+  key: string;
   product_id: number | null;
   product_name: string;
-  quantity:   string;
+  quantity: string;
   unit_price: string;
-  discount:   string;
-  tax_rate:   string;
+  discount: string;
+  tax_rate: string;
 }
 
 interface OrderFormFields {
-  customer_id:       number | null;
-  warehouse_id:      number | null;
-  order_date:        string;
+  customer_id: number | null;
+  warehouse_id: number | null;
+  order_date: string;
   expected_delivery: string;
-  delivery_address:  string;
-  notes:             string;
+  delivery_address: string;
+  notes: string;
 }
 
 type FormErrors = Record<string, string>;
@@ -44,27 +44,25 @@ export function useOrderForm() {
     customer_id: null, warehouse_id: null,
     order_date: todayStr(), expected_delivery: '', delivery_address: '', notes: '',
   });
-  const [items,     setItems]     = useState<OrderLineItem[]>([emptyItem()]);
-  const [errors,    setErrors]    = useState<FormErrors>({});
+  const [items, setItems] = useState<OrderLineItem[]>([emptyItem()]);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [products,  setProducts]  = useState<Product[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [saving,    setSaving]    = useState(false);
-  const [saved,     setSaved]     = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  // Load picker data
+  // Load picker data (customers + warehouses only — products searched on demand)
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [custRes, whRes, prodRes] = await Promise.all([
+      const [custRes, whRes] = await Promise.all([
         CustomerApi.getCustomers({ search: '' }),
         WarehouseApi.getWarehouses({ is_active: true }),
-        ProductApi.getProducts({ is_active: true, page_size: 200 }),
       ]);
       setCustomers(custRes.results ?? []);
       setWarehouses(Array.isArray(whRes) ? whRes : []);
-      setProducts(prodRes.results ?? []);
     } catch (e: any) {
       Alert.alert('Error', e?.message ?? 'Failed to load data');
     } finally {
@@ -73,6 +71,20 @@ export function useOrderForm() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Server-side product search — called from the product picker
+  async function searchProducts(query: string) {
+    try {
+      const res = await ProductApi.getProducts({
+        is_active: true,
+        search: query || undefined,
+        page_size: 30,
+      });
+      setProducts(res.results ?? []);
+    } catch {
+      // silently fail — user can retry
+    }
+  }
 
   // Form field setter
   function setField<K extends keyof OrderFormFields>(key: K, value: OrderFormFields[K]) {
@@ -144,20 +156,20 @@ export function useOrderForm() {
     try {
       const orderItems: CreateOrderItemPayload[] = items.map((it) => ({
         product_id: it.product_id!,
-        quantity:   it.quantity,
+        quantity: it.quantity,
         unit_price: it.unit_price,
-        discount:   it.discount || '0',
-        tax_rate:   it.tax_rate || '0',
+        discount: it.discount || '0',
+        tax_rate: it.tax_rate || '0',
       }));
 
       const payload: CreateOrderPayload = {
-        customer_id:      form.customer_id!,
-        warehouse_id:     form.warehouse_id!,
-        order_date:       form.order_date,
+        customer_id: form.customer_id!,
+        warehouse_id: form.warehouse_id!,
+        order_date: form.order_date,
         expected_delivery: form.expected_delivery || undefined,
-        delivery_address:  form.delivery_address,
-        notes:            form.notes,
-        items:            orderItems,
+        delivery_address: form.delivery_address,
+        notes: form.notes,
+        items: orderItems,
       };
 
       await OrderApi.createOrder(payload);
@@ -178,7 +190,7 @@ export function useOrderForm() {
 
   return {
     form, setField, items, errors,
-    customers, warehouses, products,
+    customers, warehouses, products, searchProducts,
     loading, saving, saved,
     updateItem, selectProduct, addItem, removeItem,
     getSubtotal, handleSave,

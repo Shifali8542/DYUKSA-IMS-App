@@ -27,7 +27,11 @@ import POFormScreen from '../screens/POForm/POForm';
 import PODetailScreen from '../screens/PODetail/PODetail';
 import SuppliersScreen from '../screens/Suppliers/Suppliers';
 import BulkImportScreen from '../screens/BulkImport/BulkImport';
-
+import InvoicesScreen from '../screens/Invoices/Invoices';
+import InvoiceDetailScreen from '../screens/InvoiceDetail/InvoiceDetail';
+import InvoicePreviewScreen from '../screens/InvoicePreview/InvoicePreview';
+import InvoiceSettingsScreen from '../screens/InvoiceSettings/InvoiceSettings';
+import InvoiceFormScreen from '../screens/InvoiceForm/InvoiceForm';
 const DRAWER_WIDTH = 280;
 
 const Tab = createBottomTabNavigator();
@@ -66,6 +70,8 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
     { label: 'Home', icon: '🏠', onPress: () => navigateTo('MainTabs', { screen: 'Home' }) },
     { label: 'Inventory', icon: '📦', onPress: () => navigateTo('MainTabs', { screen: 'Inventory' }) },
     { label: 'Orders', icon: '📋', onPress: () => navigateTo('MainTabs', { screen: 'Orders' }) },
+    { label: 'Invoices', icon: '🧾', onPress: () => navigateTo('Invoices') },
+    { label: 'Invoice Settings', icon: '⚙️', onPress: () => navigateTo('InvoiceSettingsScreen') },
     { label: 'Warehouses', icon: '🏭', onPress: () => navigateTo('Warehouses') },
     ...(canManagePurchasing ? [{ label: 'Suppliers', icon: '🏢', onPress: () => navigateTo('Suppliers') }] : []),
     { label: 'Notifications', icon: '🔔', onPress: () => navigateTo('MainTabs', { screen: 'Alerts' }) },
@@ -266,6 +272,17 @@ function MainStack({ onLogout }: Props) {
       </Stack.Screen>
       <Stack.Screen name="CustomerForm" options={{ headerShown: true, title: 'Add Customer' }}>
         {(props: any) => <CustomerFormScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ headerShown: true, title: 'Invoices' }} />
+      <Stack.Screen name="InvoiceDetail" options={{ headerShown: true, title: 'Invoice Detail' }}>
+        {(props: any) => <InvoiceDetailScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="InvoicePreview" options={{ headerShown: true, title: 'Invoice' }}>
+        {(props: any) => <InvoicePreviewScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="InvoiceSettingsScreen" component={InvoiceSettingsScreen} options={{ headerShown: true, title: 'Invoice Settings' }} />
+      <Stack.Screen name="InvoiceForm" options={{ headerShown: true, title: 'New Invoice' }}>
+        {(props: any) => <InvoiceFormScreen {...props} />}
       </Stack.Screen>
     </Stack.Navigator>
   );

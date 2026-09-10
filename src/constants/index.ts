@@ -34,6 +34,23 @@ export const TRANSFER_STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
+export const INVOICE_STATUS_LABEL: Record<string, string> = {
+  draft:          'Draft',
+  finalized:      'Finalized',
+  partially_paid: 'Partially Paid',
+  paid:           'Paid',
+  overdue:        'Overdue',
+  cancelled:      'Cancelled',
+};
+
+export const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  cash:   'Cash',
+  card:   'Card',
+  upi:    'UPI',
+  bank:   'Bank Transfer',
+  cheque: 'Cheque',
+};
+
 export const NOTIFICATION_TYPE_LABEL: Record<string, string> = {
   low_stock:       'Low Stock',
   order_confirmed: 'Order Confirmed',
