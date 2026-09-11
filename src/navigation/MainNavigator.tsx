@@ -7,7 +7,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { DrawerContext } from './DrawerContext';
-
 import HomeScreen from '../screens/Home/Home';
 import InventoryScreen from '../screens/Inventory/Inventory';
 import OrdersScreen from '../screens/Orders/Orders';
@@ -32,10 +31,15 @@ import InvoiceDetailScreen from '../screens/InvoiceDetail/InvoiceDetail';
 import InvoicePreviewScreen from '../screens/InvoicePreview/InvoicePreview';
 import InvoiceSettingsScreen from '../screens/InvoiceSettings/InvoiceSettings';
 import InvoiceFormScreen from '../screens/InvoiceForm/InvoiceForm';
+import DispatchesScreen from '../screens/Dispatches/Dispatches';
+import DispatchDetailScreen from '../screens/DispatchDetail/DispatchDetail';
+import PackingSlipPreviewScreen from '../screens/PackingSlipPreview/PackingSlipPreview';
 const DRAWER_WIDTH = 280;
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator(); <Stack.Screen name="DispatchDetail" options={{ headerShown: true, title: 'Dispatch Detail' }}>
+  {(props: any) => <DispatchDetailScreen {...props} />}
+</Stack.Screen>
 
 const TAB_ICONS: Record<string, string> = {
   Home: '🏠',
@@ -72,6 +76,7 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
     { label: 'Orders', icon: '📋', onPress: () => navigateTo('MainTabs', { screen: 'Orders' }) },
     { label: 'Invoices', icon: '🧾', onPress: () => navigateTo('Invoices') },
     { label: 'Invoice Settings', icon: '⚙️', onPress: () => navigateTo('InvoiceSettingsScreen') },
+    { label: 'Dispatches', icon: '🚚', onPress: () => navigateTo('Dispatches') },
     { label: 'Warehouses', icon: '🏭', onPress: () => navigateTo('Warehouses') },
     ...(canManagePurchasing ? [{ label: 'Suppliers', icon: '🏢', onPress: () => navigateTo('Suppliers') }] : []),
     { label: 'Notifications', icon: '🔔', onPress: () => navigateTo('MainTabs', { screen: 'Alerts' }) },
@@ -283,6 +288,13 @@ function MainStack({ onLogout }: Props) {
       <Stack.Screen name="InvoiceSettingsScreen" component={InvoiceSettingsScreen} options={{ headerShown: true, title: 'Invoice Settings' }} />
       <Stack.Screen name="InvoiceForm" options={{ headerShown: true, title: 'New Invoice' }}>
         {(props: any) => <InvoiceFormScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="Dispatches" component={DispatchesScreen} options={{ headerShown: true, title: 'Dispatches' }} />
+      <Stack.Screen name="DispatchDetail" options={{ headerShown: true, title: 'Dispatch Detail' }}>
+        {(props: any) => <DispatchDetailScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="PackingSlipPreview" options={{ headerShown: true, title: 'Packing Slip' }}>
+        {(props: any) => <PackingSlipPreviewScreen {...props} />}
       </Stack.Screen>
     </Stack.Navigator>
   );

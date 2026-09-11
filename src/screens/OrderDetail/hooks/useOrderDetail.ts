@@ -11,7 +11,7 @@ function getActions(order: SalesOrder | null) {
   if (!order) return [];
 
   const hasInvoice = order.invoice_id !== null;
-  const actions: { label: string; action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice'; variant: 'primary' | 'danger' }[] = [];
+  const actions: { label: string; action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice' | 'create_dispatch' | 'view_dispatch'; variant: 'primary' | 'danger' }[] = [];
 
   if (order.status === 'draft') {
     actions.push({ label: 'Confirm', action: 'confirm', variant: 'primary' });
@@ -22,6 +22,14 @@ function getActions(order: SalesOrder | null) {
     } else {
       actions.push({ label: 'Generate Invoice', action: 'invoice', variant: 'primary' });
     }
+
+    const hasDispatch = order.dispatch_note_id !== null;
+    if (hasDispatch) {
+      actions.push({ label: `View Dispatch ${order.dispatch_number ?? ''}`, action: 'view_dispatch', variant: 'primary' });
+    } else if (['confirmed', 'packed'].includes(order.status)) {
+      actions.push({ label: 'Create Dispatch', action: 'create_dispatch', variant: 'primary' });
+    }
+
     if (order.status === 'confirmed') {
       actions.push({ label: 'Cancel', action: 'cancel', variant: 'danger' });
     }
@@ -52,13 +60,51 @@ export function useOrderDetail(orderId: number) {
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
-  function handleAction(action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice') {
+  function handleAction(action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice' | 'create_dispatch' | 'view_dispatch') {
     if (!order) return;
 
     if (action === 'view_invoice') {
       if (order.invoice_id) {
         nav.navigate('InvoiceDetail', { invoiceId: order.invoice_id });
       }
+      return;
+    }
+
+    if (action === 'view_dispatch') {
+      if (order.dispatch_note_id) {
+        nav.navigate('DispatchDetail', { dispatchId: order.dispatch_note_id });
+      }
+      return;
+    }
+
+    if (action === 'create_dispatch') {
+      Alert.alert('Create Dispatch?', `Create dispatch note for order ${order.order_number}?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Create',
+          onPress: async () => {
+            setTransitioning(true);
+            try {
+              const { DispatchApi } = await import('../../../api/api');
+              const dn = await DispatchApi.createDispatch({
+                order: order.id,
+                warehouse: order.warehouse,
+                delivery_address: order.delivery_address,
+              });
+              Alert.alert('Dispatch Created', `${dn.dispatch_number} created.`, [
+                { text: 'View Dispatch', onPress: () => nav.navigate('DispatchDetail', { dispatchId: dn.id }) },
+                { text: 'Stay Here', style: 'cancel' },
+              ]);
+              await fetchOrder();
+            } catch (e: any) {
+              const msg = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? e?.message ?? 'Failed to create dispatch.';
+              Alert.alert('Error', msg);
+            } finally {
+              setTransitioning(false);
+            }
+          },
+        },
+      ]);
       return;
     }
 

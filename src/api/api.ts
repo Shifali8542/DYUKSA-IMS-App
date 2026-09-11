@@ -3,6 +3,7 @@ import { tokenStorage } from '../utils/tokenStorage';
 import type {
   LoginResponse, RefreshResponse, DashboardData, Product, ProductCreatePayload, ProductImage, ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse,
   Warehouse, SalesOrder, CreateOrderPayload, PurchaseOrder, Invoice, InvoicePayment, InvoiceSettings, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User,
+  DispatchNote
 } from '../types';
 
 // Base URLs — from environment
@@ -270,6 +271,34 @@ export const InvoiceSettingsApi = {
       `/api/v1/invoices/settings/${settings.organisation}/`,
       payload,
     );
+    return data.data ?? data;
+  },
+};
+
+export const DispatchApi = {
+  getDispatches: async (params?: {
+    status?: string; search?: string; page?: number;
+  }): Promise<PaginatedResponse<DispatchNote>> => {
+    const { data } = await imsClient.get('/api/v1/dispatch/', { params });
+    return data;
+  },
+
+  getDispatch: async (id: number): Promise<DispatchNote> => {
+    const { data } = await imsClient.get(`/api/v1/dispatch/${id}/`);
+    return data.data ?? data;
+  },
+
+  createDispatch: async (payload: {
+    order: number; warehouse: number; delivery_address?: string; carrier?: string; notes?: string;
+  }): Promise<DispatchNote> => {
+    const { data } = await imsClient.post('/api/v1/dispatch/', payload);
+    return data.data ?? data;
+  },
+
+  transition: async (id: number, payload: {
+    status: string; tracking_number?: string; carrier?: string;
+  }): Promise<DispatchNote> => {
+    const { data } = await imsClient.post(`/api/v1/dispatch/${id}/transition/`, payload);
     return data.data ?? data;
   },
 };

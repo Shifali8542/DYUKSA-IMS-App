@@ -305,6 +305,8 @@ export interface SalesOrder {
   order_number: string;
   invoice_id: number | null;
   invoice_number: string | null;
+  dispatch_note_id: number | null;
+  dispatch_number: string | null;
   customer: number;
   customer_name?: string;
   customer_code?: string;
@@ -378,17 +380,45 @@ export interface PurchaseOrder {
 }
 
 // ── Dispatch 
+export type DispatchStatus = 'pending' | 'approved' | 'dispatched' | 'delivered' | 'returned';
+
+export interface DispatchItem {
+  id: number;
+  product: number;
+  product_name: string;
+  product_sku: string;
+  order_item: number | null;
+  quantity: string;
+}
+
 export interface DispatchNote {
   id: number;
-  dispatch_number: string;
+  organisation: number;
   order: number;
-  order_number?: string;
-  customer_name?: string;
-  warehouse_name?: string;
-  status: string;
-  carrier?: string;
-  tracking_number?: string;
+  order_number: string;
+  customer_name: string;
+  dispatch_number: string;
+  warehouse: number;
+  warehouse_name: string;
+  status: DispatchStatus;
+  status_display: string;
+  dispatched_at: string | null;
+  delivered_at: string | null;
+  carrier: string;
+  tracking_number: string;
+  delivery_address: string;
+  approved_by: number | null;
+  approved_at: string | null;
+  notes: string;
+  items: DispatchItem[];
+  shiprocket_order_id: number | null;
+  shiprocket_shipment_id: number | null;
+  awb_code: string;
+  courier_name: string;
   created_at: string;
+  updated_at: string;
+  created_by: number | null;
+  created_by_name: string;
 }
 
 // ── Notification 
@@ -445,8 +475,9 @@ export type MainStackParamList = {
   InvoicePreview: { invoiceId: number };
   InvoiceSettingsScreen: undefined;
   InvoiceForm: undefined;
+  Dispatches: undefined;
+  DispatchDetail: { dispatchId: number };
 };
-
 // ── Invoices 
 export type InvoiceStatus = 'draft' | 'finalized' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled';
 
