@@ -98,12 +98,19 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+
   function setField<K extends keyof FormFields>(key: K, value: FormFields[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   }
 
-  // ── Image picker ─────────────────────────────────────────────────────────
+  function onBarcodeScan(barcode: string) {
+    setField('barcode', barcode);
+    setShowBarcodeScanner(false);
+  }
+
+  // ── Image picker 
   async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -353,6 +360,7 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
     form, setField, errors,
     categories, brands, units, suppliers,
     loading, saving, saved, isEdit,
+    showBarcodeScanner, setShowBarcodeScanner, onBarcodeScan,
     handleSave, pickImage, takePhoto, removeImage, cropImage,
     createCategory, createBrand, createUnit,
     deleteCategory, deleteBrand, deleteUnit,

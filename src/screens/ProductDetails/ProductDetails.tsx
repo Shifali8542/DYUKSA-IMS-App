@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Share } from 'react-native';
 import { styles } from './ProductDetails.styles';
 import {
   SafeAreaView
@@ -8,7 +8,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useProductDetails } from './hooks/useProductDetails';
-import { ProductApi } from '../../api/api';
+import { ProductApi, imsClient } from '../../api/api';
+import { tokenStorage } from '../../utils/tokenStorage';
 import { useStockAdjust } from './hooks/useStockAdjust';
 import StockAdjustModal from './components/StockAdjustModal';
 import Loader from '../../components/Loader/Loader';
@@ -32,7 +33,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
   const { productId } = route.params;
   const { canEditProducts, canDeleteProducts, canAdjustStock } = usePermissions();
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
-  const { product, stockLevels, images, loading, error, refresh } = useProductDetails(productId);
+  const { product, stockLevels, images, movements, movementsLoading, batches, loading, error, refresh } = useProductDetails(productId);
   const adjust = useStockAdjust(productId);
   const [deleting, setDeleting] = useState(false);
 
@@ -215,6 +216,191 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
           </Card>
         )}
 
+        {/* Batch / Expiry Tracking */}
+        {product.is_batch_tracked && (
+          <Card style={{ marginBottom: spacing.base }}>
+            <Text style={{ color: colors.textPrimary, fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: spacing.base }}>
+              Batch / Expiry Tracking
+            </Text>
+
+            {batches.length === 0 ? (
+              <View style={{ padding: spacing.lg, alignItems: 'center' }}>
+                <Text style={{ fontSize: 28, marginBottom: spacing.xs }}>📦</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>No batches recorded yet</Text>
+              </View>
+            ) : (
+              batches.map((batch: any, idx: number) => {
+                const isExpired = batch.is_expired;
+                const daysLeft = batch.days_until_expiry;
+                const isNearExpiry = daysLeft !== null && daysLeft <= 30 && daysLeft > 0;
+
+                return (
+                  <View
+                    key={batch.id}
+                    style={{
+                      padding: spacing.sm, borderRadius: borderRadius.md, marginBottom: spacing.xs,
+                      backgroundColor: isExpired ? '#FEE2E2' : isNearExpiry ? '#FFFBEB' : colors.surfaceSecondary,
+                      borderWidth: 1,
+                      borderColor: isExpired ? '#DC2626' : isNearExpiry ? '#F59E0B' : colors.border,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.bold }}>
+                            {batch.batch_number}
+                          </Text>
+                          {isExpired && (
+                            <View style={{ backgroundColor: '#DC2626', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
+                              <Text style={{ color: '#fff', fontSize: 9, fontWeight: '600' }}>EXPIRED</Text>
+                            </View>
+                          )}
+                          {isNearExpiry && (
+                            <View style={{ backgroundColor: '#F59E0B', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 }}>
+                              <Text style={{ color: '#fff', fontSize: 9, fontWeight: '600' }}>{daysLeft}d left</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>
+                          {batch.warehouse_name}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ color: colors.textPrimary, fontSize: fontSize.base, fontWeight: fontWeight.bold }}>
+                          {fmtQty(batch.quantity)}
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 10 }}>units</Text>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs, paddingTop: spacing.xs, borderTopWidth: 1, borderTopColor: isExpired ? '#FECACA' : colors.border }}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                        MFG: {batch.manufacturing_date ? new Date(batch.manufacturing_date).toLocaleDateString() : '—'}
+                      </Text>
+                      <Text style={{ color: isExpired ? '#DC2626' : isNearExpiry ? '#F59E0B' : colors.textSecondary, fontSize: 10, fontWeight: isExpired || isNearExpiry ? '600' : '400' }}>
+                        EXP: {batch.expiry_date ? new Date(batch.expiry_date).toLocaleDateString() : '—'}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+
+            <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: spacing.xs, fontStyle: 'italic' }}>
+              Ordered by expiry date (FEFO — First Expiry, First Out)
+            </Text>
+          </Card>
+        )}
+
+        {/* Barcode & Label */}
+        <Card style={{ marginBottom: spacing.base }}>
+          <Text style={{ color: colors.textPrimary, fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: spacing.base }}>
+            Barcode & Label
+          </Text>
+
+          {product.barcode ? (
+            <View style={{ alignItems: 'center', marginBottom: spacing.base }}>
+              <View style={{
+                backgroundColor: '#fff', borderRadius: borderRadius.md, padding: spacing.base,
+                borderWidth: 1, borderColor: colors.border, width: '100%', alignItems: 'center',
+              }}>
+                <Text style={{ fontSize: 11, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                  Barcode
+                </Text>
+                <Text style={{ fontSize: 22, fontFamily: 'Courier', letterSpacing: 3, color: colors.textPrimary, fontWeight: fontWeight.bold }}>
+                  {product.barcode}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={{ alignItems: 'center', marginBottom: spacing.base }}>
+              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginBottom: spacing.sm }}>
+                No barcode assigned
+              </Text>
+              {canEditProducts && (
+                <TouchableOpacity
+                  onPress={async () => {
+                    try {
+                      const res = await ProductApi.generateBarcode(product.id);
+                      Alert.alert('Barcode Generated', `Barcode: ${res.barcode}`);
+                      refresh();
+                    } catch (e: any) {
+                      Alert.alert('Error', 'Failed to generate barcode.');
+                    }
+                  }}
+                  style={{
+                    backgroundColor: colors.primary, borderRadius: borderRadius.md,
+                    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
+                  }}
+                >
+                  <Text style={{ color: colors.textInverse, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
+                    Generate Barcode
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Label actions */}
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <TouchableOpacity
+              onPress={async () => {
+                const accessToken = await tokenStorage.getAccessToken();
+                const baseURL = imsClient.defaults.baseURL ?? '';
+                const url = `${baseURL}/api/v1/products/${product.id}/barcode-label/?size=standard`;
+
+                try {
+                  const resp = await fetch(url, {
+                    headers: { Authorization: `Bearer ${accessToken ?? ''}` },
+                  });
+                  const html = await resp.text();
+                  const { printAsync } = await import('expo-print');
+                  await printAsync({ html });
+                } catch {
+                  Alert.alert('Error', 'Failed to print label.');
+                }
+              }}
+              style={{
+                flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
+                paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border,
+              }}
+            >
+              <Text style={{ fontSize: 14 }}>🏷️</Text>
+              <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Print Label</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={async () => {
+                const accessToken = await tokenStorage.getAccessToken();
+                const baseURL = imsClient.defaults.baseURL ?? '';
+                const url = `${baseURL}/api/v1/products/${product.id}/barcode-label/?size=sheet`;
+
+                try {
+                  const resp = await fetch(url, {
+                    headers: { Authorization: `Bearer ${accessToken ?? ''}` },
+                  });
+                  const html = await resp.text();
+                  const { printToFileAsync } = await import('expo-print');
+                  const { shareAsync } = await import('expo-sharing');
+                  const { uri } = await printToFileAsync({ html });
+                  await shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Share Label Sheet' });
+                } catch {
+                  Alert.alert('Error', 'Failed to generate label sheet.');
+                }
+              }}
+              style={{
+                flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
+                paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border,
+              }}
+            >
+              <Text style={{ fontSize: 14 }}>📄</Text>
+              <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Label Sheet</Text>
+            </TouchableOpacity>
+          </View>
+        </Card>
+
         {/* Product Details */}
         <Card style={{ marginBottom: spacing.base }}>
           <Text style={{ color: colors.textPrimary, fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: spacing.sm }}>
@@ -228,6 +414,109 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
           <Row label="Tax Rate" value={`${product.tax_rate ?? '0'}%`} />
           <Row label="Reorder Level" value={product.reorder_level} />
           <Row label="Last Updated" value={new Date(product.updated_at).toLocaleDateString()} />
+        </Card>
+
+        {/* Stock Movement History */}
+        <Card style={{ marginBottom: spacing.base }}>
+          <Text style={{ color: colors.textPrimary, fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: spacing.base }}>
+            Stock History
+          </Text>
+
+          {movementsLoading ? (
+            <View style={{ padding: spacing.lg, alignItems: 'center' }}>
+              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>Loading history...</Text>
+            </View>
+          ) : movements.length === 0 ? (
+            <View style={{ padding: spacing.lg, alignItems: 'center' }}>
+              <Text style={{ fontSize: 28, marginBottom: spacing.xs }}>📋</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>No stock movements yet</Text>
+            </View>
+          ) : (
+            movements.map((mv, idx) => {
+              const isPositive = parseFloat(mv.quantity) > 0;
+              const typeColors: Record<string, { bg: string; text: string; icon: string }> = {
+                receipt: { bg: '#ECFDF5', text: '#10B981', icon: '📥' },
+                adjustment_in: { bg: '#ECFDF5', text: '#10B981', icon: '➕' },
+                return: { bg: '#EFF6FF', text: '#3B82F6', icon: '🔄' },
+                transfer_in: { bg: '#EFF6FF', text: '#3B82F6', icon: '📦' },
+                dispatch: { bg: '#FFFBEB', text: '#F59E0B', icon: '🚚' },
+                delivery: { bg: '#FFFBEB', text: '#F59E0B', icon: '✅' },
+                adjustment_out: { bg: '#FEE2E2', text: '#DC2626', icon: '➖' },
+                reservation: { bg: '#F5F3FF', text: '#6366F1', icon: '🔒' },
+                release: { bg: '#F5F3FF', text: '#6366F1', icon: '🔓' },
+                damage: { bg: '#FEE2E2', text: '#DC2626', icon: '💥' },
+                transfer_out: { bg: '#FEE2E2', text: '#DC2626', icon: '📤' },
+              };
+              const tc = typeColors[mv.movement_type] ?? { bg: colors.surfaceSecondary, text: colors.textSecondary, icon: '📋' };
+              const typeLabel = mv.movement_type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+              return (
+                <View
+                  key={mv.id}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+                    paddingVertical: spacing.sm,
+                    borderBottomWidth: idx < movements.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  {/* Icon */}
+                  <View style={{
+                    width: 36, height: 36, borderRadius: 18,
+                    backgroundColor: tc.bg, alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Text style={{ fontSize: 16 }}>{tc.icon}</Text>
+                  </View>
+
+                  {/* Details */}
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>
+                        {typeLabel}
+                      </Text>
+                      <Text style={{
+                        color: isPositive ? '#10B981' : '#DC2626',
+                        fontSize: fontSize.sm, fontWeight: fontWeight.bold,
+                      }}>
+                        {isPositive ? '+' : ''}{fmtQty(mv.quantity)}
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                        {mv.source_reference || mv.reference}
+                      </Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                        Bal: {fmtQty(mv.balance_after)}
+                      </Text>
+                    </View>
+
+                    {mv.notes ? (
+                      <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 1, fontStyle: 'italic' }}>
+                        {mv.notes}
+                      </Text>
+                    ) : null}
+
+                    <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2 }}>
+                      {new Date(mv.created_at).toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+
+          {movements.length > 0 && (
+            <View style={{
+              flexDirection: 'row', justifyContent: 'center',
+              paddingTop: spacing.sm, marginTop: spacing.xs,
+              borderTopWidth: 1, borderTopColor: colors.border,
+            }}>
+              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>
+                Showing latest {movements.length} movements • Immutable ledger
+              </Text>
+            </View>
+          )}
         </Card>
       </ScrollView>
 

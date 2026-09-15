@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  View, Text, ScrollView, Switch, Alert, TouchableOpacity,
-  Image, Modal, FlatList, Pressable,
-} from 'react-native';
+import { View, Text, ScrollView, Switch, Alert, TouchableOpacity, Image, Modal, FlatList, Pressable,  Vibration } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { styles } from './ProductForm.styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -23,11 +21,13 @@ export default function ProductFormScreen({ route, navigation }: Props) {
   const prefillBarcode = (route.params as any)?.barcode;
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
+  const [camPermission, requestCamPermission] = useCameraPermissions();
 
   const {
     form, setField, errors,
     categories, brands, units, suppliers,
     loading, saving, saved, isEdit,
+    showBarcodeScanner, setShowBarcodeScanner, onBarcodeScan,
     handleSave, pickImage, takePhoto, removeImage, cropImage,
     createCategory, createBrand, createUnit,
     deleteCategory, deleteBrand, deleteUnit,
@@ -86,7 +86,7 @@ export default function ProductFormScreen({ route, navigation }: Props) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-               {/* ── Product Image ── */}
+        {/* ── Product Image ── */}
         <Card style={{ marginBottom: spacing.base }}>
           <Text style={[{ fontWeight: '600', fontSize: fontSize.sm, marginBottom: spacing.sm }]}>
             Product Images ({form.image_uris.length}/8)
@@ -194,6 +194,23 @@ export default function ProductFormScreen({ route, navigation }: Props) {
                 onChangeText={(v) => setField('barcode', v)}
                 placeholder="Scan or type"
               />
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!camPermission?.granted) {
+                    const res = await requestCamPermission();
+                    if (!res.granted) return;
+                  }
+                  setShowBarcodeScanner(true);
+                }}
+                style={{
+                  backgroundColor: colors.primary, borderRadius: borderRadius.md,
+                  paddingVertical: 8, alignItems: 'center', marginTop: 4,
+                }}
+              >
+                <Text style={{ color: colors.textInverse, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
+                  📷 Scan Barcode
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -427,7 +444,7 @@ export default function ProductFormScreen({ route, navigation }: Props) {
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 20 }}
           onPress={() => setShowVendorPicker(false)}
         >
-          <Pressable onPress={() => {}} style={{
+          <Pressable onPress={() => { }} style={{
             backgroundColor: colors.surface, borderRadius: borderRadius.lg,
             maxHeight: '60%', overflow: 'hidden',
           }}>
@@ -463,6 +480,37 @@ export default function ProductFormScreen({ route, navigation }: Props) {
             />
           </Pressable>
         </Pressable>
+      </Modal>
+      {/* Barcode scanner modal */}
+      <Modal visible={showBarcodeScanner} animationType="slide">
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
+          <CameraView
+            style={{ flex: 1 }}
+            barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'qr'] }}
+            onBarcodeScanned={(e) => {
+              Vibration.vibrate(100);
+              onBarcodeScan(e.data);
+            }}
+          />
+          <View style={{
+            position: 'absolute', top: 50, left: 0, right: 0,
+            alignItems: 'center',
+          }}>
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', textShadowColor: '#000', textShadowRadius: 4 }}>
+              Point camera at barcode
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setShowBarcodeScanner(false)}
+            style={{
+              position: 'absolute', bottom: 50, alignSelf: 'center',
+              backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 25,
+              paddingHorizontal: 30, paddingVertical: 12,
+            }}
+          >
+            <Text style={{ color: '#000', fontSize: 16, fontWeight: '600' }}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
       </Modal>
     </SafeAreaView>
   );

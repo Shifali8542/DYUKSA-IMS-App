@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ProductApi, ProductImageApi } from '../../../api/api';
-import type { Product, ProductImage, ProductStockResponse } from '../../../types';
+import type { Product, ProductImage, ProductStockResponse, StockMovement, Batch } from '../../../types';
 
 export function useProductDetails(productId: number) {
   const [product, setProduct] = useState<Product | null>(null);
   const [stockLevels, setStockLevels] = useState<ProductStockResponse['warehouses']>([]);
   const [images, setImages] = useState<ProductImage[]>([]);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [batches, setBatches] = useState<any[]>([]);
+  const [movementsLoading, setMovementsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,7 +19,7 @@ export function useProductDetails(productId: number) {
       const p = await ProductApi.getProduct(productId);
       setProduct(p);
 
-            try {
+      try {
         const stockRes = await ProductApi.getProductStock(productId);
         setStockLevels(stockRes.warehouses ?? []);
       } catch {
@@ -29,6 +32,25 @@ export function useProductDetails(productId: number) {
       } catch {
         setImages([]);
       }
+
+      try {
+        setMovementsLoading(true);
+        const mvRes = await ProductApi.getStockMovements(productId);
+        setMovements(mvRes.results ?? []);
+      } catch {
+        setMovements([]);
+            } finally {
+        setMovementsLoading(false);
+      }
+
+      if (p.is_batch_tracked) {
+        try {
+          const batchRes = await ProductApi.getBatches(productId);
+          setBatches(Array.isArray(batchRes) ? batchRes : []);
+        } catch {
+          setBatches([]);
+        }
+      }
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load product');
     } finally {
@@ -38,5 +60,5 @@ export function useProductDetails(productId: number) {
 
   useEffect(() => { fetchProduct(); }, [fetchProduct]);
 
-    return { product, stockLevels, images, loading, error, refresh: fetchProduct };
+      return { product, stockLevels, images, movements, movementsLoading, batches, loading, error, refresh: fetchProduct };
 }

@@ -92,7 +92,6 @@ export interface DashboardData {
   }[];
 }
 
-// ── Product 
 // ── Product Image 
 export interface ProductImage {
   id: number;
@@ -113,6 +112,7 @@ export interface Product {
   name: string;
   sku: string;
   barcode?: string | null;
+  is_batch_tracked: boolean;
   description?: string;
   category: number | null;
   category_name?: string | null;
@@ -546,6 +546,21 @@ export interface Invoice {
   updated_at: string;
 }
 
+// ── Stock Movements
+export interface StockMovement {
+  id: number;
+  reference: string;
+  product: number;
+  warehouse: number;
+  movement_type: string;
+  quantity: string;
+  balance_after: string;
+  source_type: string;
+  source_reference: string;
+  notes: string;
+  created_at: string;
+}
+
 export interface InvoiceSettings {
   organisation: number;
   company_name: string;
@@ -574,4 +589,21 @@ export interface InvoiceSettings {
   invoice_prefix: string;
   invoice_footer_note: string;
   full_address: string;
+}
+
+// ── Batch / Expiry Tracking 
+export interface Batch {
+  id: number;
+  product: number;
+  product_name: string;
+  warehouse: number;
+  warehouse_name: string;
+  batch_number: string;
+  manufacturing_date: string | null;
+  expiry_date: string | null;
+  quantity: string;
+  is_active: boolean;
+  is_expired: boolean;
+  days_until_expiry: number | null;
+  created_at: string;
 }

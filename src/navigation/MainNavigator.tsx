@@ -239,10 +239,7 @@ function TabNavigator({ onLogout }: Props) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // MAIN STACK — all routes registered here
-// ═══════════════════════════════════════════════════════════════════════════
-
 function MainStack({ onLogout }: Props) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -274,6 +271,9 @@ function MainStack({ onLogout }: Props) {
       <Stack.Screen name="Suppliers" component={SuppliersScreen} options={{ headerShown: true, title: 'Suppliers' }} />
       <Stack.Screen name="BulkImport" options={{ headerShown: true, title: 'Import Products' }}>
         {(props: any) => <BulkImportScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="Scanner" options={{ headerShown: true, title: 'Barcode Scanner' }}>
+        {(props: any) => <ScannerScreen {...props} />}
       </Stack.Screen>
       <Stack.Screen name="CustomerForm" options={{ headerShown: true, title: 'Add Customer' }}>
         {(props: any) => <CustomerFormScreen {...props} />}

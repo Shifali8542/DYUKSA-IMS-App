@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, Share } from 'react-native';
+import { tokenStorage } from '../../utils/tokenStorage';
+import { imsClient } from '../../api/api';
 import { styles } from './Inventory.styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -15,6 +17,9 @@ import ErrorState from '../../components/ErrorState/ErrorState';
 import type { Product, MainStackParamList } from '../../types';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
+
+const ExpoFS = require('expo-file-system/legacy');
+const ExpoSharing = require('expo-sharing');
 
 export default function InventoryScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
@@ -73,7 +78,7 @@ export default function InventoryScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       {/* Header */}
-            <View style={[styles.header, { padding: spacing.base, backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
+      <View style={[styles.header, { padding: spacing.base, backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
         <View>
           <Text style={[styles.title, { color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold }]}>
             Inventory
@@ -81,18 +86,87 @@ export default function InventoryScreen() {
           <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm }}>{total} products</Text>
         </View>
         {canCreateProducts && (
-          <TouchableOpacity
-            onPress={() => nav.navigate('BulkImport')}
-            style={{
-              backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
-              paddingHorizontal: spacing.base, paddingVertical: spacing.sm,
-              borderWidth: 1, borderColor: colors.border,
-              flexDirection: 'row', alignItems: 'center', gap: 6,
-            }}
-          >
-            <Text style={{ fontSize: 14 }}>📤</Text>
-            <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Import</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            <TouchableOpacity
+              onPress={async () => {
+                const fmt = await new Promise<'csv' | 'xlsx' | null>((resolve) => {
+                  Alert.alert('Export Products', 'Choose format:', [
+                    { text: 'CSV', onPress: () => resolve('csv') },
+                    { text: 'Excel', onPress: () => resolve('xlsx') },
+                    { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+                  ]);
+                });
+                if (!fmt) return;
+
+                Alert.alert('Exporting...', 'Downloading your products file.');
+
+                try {
+                  const accessToken = await tokenStorage.getAccessToken();
+                  const baseURL = imsClient.defaults.baseURL ?? '';
+                  const url = `${baseURL}/api/v1/products/export/?file_format=${fmt}`;
+
+                  // Use expo-print to create a temp HTML → PDF won't work for CSV/XLSX
+                  // Instead: fetch as arraybuffer → write to file → share
+                  const resp = await fetch(url, {
+                    headers: { Authorization: `Bearer ${accessToken ?? ''}` },
+                  });
+
+                  if (!resp.ok) {
+                    Alert.alert('Error', `Server returned ${resp.status}`);
+                    return;
+                  }
+
+                  const arrayBuffer = await resp.arrayBuffer();
+                  const bytes = new Uint8Array(arrayBuffer);
+                  let binary = '';
+                  for (let i = 0; i < bytes.length; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                  }
+                  const base64 = btoa(binary);
+
+                  const filePath = `${ExpoFS.cacheDirectory}products_export.${fmt}`;
+
+                  await ExpoFS.writeAsStringAsync(filePath, base64, {
+                    encoding: 'base64',
+                  });
+
+                  if (await ExpoSharing.isAvailableAsync()) {
+                    await ExpoSharing.shareAsync(filePath, {
+                      mimeType: fmt === 'xlsx'
+                        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        : 'text/csv',
+                      dialogTitle: 'Share Product Export',
+                    });
+                  } else {
+                    Alert.alert('Done', 'File saved but sharing not available on this device.');
+                  }
+                } catch (e: any) {
+                  Alert.alert('Export Error', e?.message ?? 'Something went wrong.');
+                }
+              }}
+              style={{
+                backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
+                paddingHorizontal: spacing.sm, paddingVertical: spacing.sm,
+                borderWidth: 1, borderColor: colors.border,
+                flexDirection: 'row', alignItems: 'center', gap: 4,
+              }}
+            >
+              <Text style={{ fontSize: 12 }}>📥</Text>
+              <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Export</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => nav.navigate('BulkImport')}
+              style={{
+                backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
+                paddingHorizontal: spacing.sm, paddingVertical: spacing.sm,
+                borderWidth: 1, borderColor: colors.border,
+                flexDirection: 'row', alignItems: 'center', gap: 4,
+              }}
+            >
+              <Text style={{ fontSize: 12 }}>📤</Text>
+              <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Import</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 

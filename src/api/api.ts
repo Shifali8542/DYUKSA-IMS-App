@@ -1,9 +1,9 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from '../utils/tokenStorage';
 import type {
-  LoginResponse, RefreshResponse, DashboardData, Product, ProductCreatePayload, ProductImage, ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse,
-  Warehouse, SalesOrder, CreateOrderPayload, PurchaseOrder, Invoice, InvoicePayment, InvoiceSettings, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User,
-  DispatchNote
+  LoginResponse, RefreshResponse, DashboardData, Product, ProductCreatePayload, ProductImage, ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse, Warehouse, SalesOrder, CreateOrderPayload,
+  PurchaseOrder, Invoice, InvoicePayment, InvoiceSettings, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User,
+  DispatchNote, StockMovement, Batch,
 } from '../types';
 
 // Base URLs — from environment
@@ -153,6 +153,30 @@ export const ProductApi = {
       if (e?.response?.status === 204) return;
       throw e;
     });
+  },
+  getBatches: async (productId: number): Promise<Batch[]> => {
+    const { data } = await imsClient.get(`/api/v1/products/${productId}/batches/`);
+    return data.data ?? data;
+  },
+
+  addBatch: async (productId: number, payload: {
+    batch_number: string; warehouse: number; quantity: string;
+    manufacturing_date?: string; expiry_date?: string;
+  }): Promise<Batch> => {
+    const { data } = await imsClient.post(`/api/v1/products/${productId}/batches/add/`, payload);
+    return data.data ?? data;
+  },
+
+  generateBarcode: async (id: number): Promise<{ barcode: string; generated: boolean }> => {
+    const { data } = await imsClient.post(`/api/v1/products/${id}/generate-barcode/`);
+    return data.data ?? data;
+  },
+
+  getStockMovements: async (productId: number, page = 1): Promise<PaginatedResponse<StockMovement>> => {
+    const { data } = await imsClient.get('/api/v1/stock-movements/', {
+      params: { product: productId, ordering: '-created_at', page, page_size: 20 },
+    });
+    return data;
   },
 };
 
