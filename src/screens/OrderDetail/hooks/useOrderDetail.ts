@@ -11,7 +11,7 @@ function getActions(order: SalesOrder | null) {
   if (!order) return [];
 
   const hasInvoice = order.invoice_id !== null;
-  const actions: { label: string; action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice' | 'create_dispatch' | 'view_dispatch'; variant: 'primary' | 'danger' }[] = [];
+  const actions: { label: string; action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice' | 'create_dispatch' | 'view_dispatch' | 'create_return'; variant: 'primary' | 'danger' }[] = [];
 
   if (order.status === 'draft') {
     actions.push({ label: 'Confirm', action: 'confirm', variant: 'primary' });
@@ -32,6 +32,10 @@ function getActions(order: SalesOrder | null) {
 
     if (order.status === 'confirmed') {
       actions.push({ label: 'Cancel', action: 'cancel', variant: 'danger' });
+    }
+
+    if (['delivered', 'dispatched'].includes(order.status)) {
+      actions.push({ label: 'Create Return', action: 'create_return', variant: 'danger' });
     }
   }
 
@@ -60,7 +64,7 @@ export function useOrderDetail(orderId: number) {
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
-  function handleAction(action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice' | 'create_dispatch' | 'view_dispatch') {
+  function handleAction(action: 'confirm' | 'cancel' | 'invoice' | 'view_invoice' | 'create_dispatch' | 'view_dispatch' | 'create_return') {
     if (!order) return;
 
     if (action === 'view_invoice') {
@@ -74,6 +78,15 @@ export function useOrderDetail(orderId: number) {
       if (order.dispatch_note_id) {
         nav.navigate('DispatchDetail', { dispatchId: order.dispatch_note_id });
       }
+      return;
+    }
+
+    if (action === 'create_return') {
+      nav.navigate('SalesReturnForm', {
+        orderId: order.id,
+        customerId: order.customer,
+        warehouseId: order.warehouse,
+      });
       return;
     }
 

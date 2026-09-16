@@ -477,7 +477,14 @@ export type MainStackParamList = {
   InvoiceForm: undefined;
   Dispatches: undefined;
   DispatchDetail: { dispatchId: number };
+  SalesReturns: undefined;
+  SalesReturnDetail: { returnId: number };
+  SalesReturnForm: { orderId: number; customerId: number; warehouseId: number };
+  PurchaseReturns: undefined;
+  PurchaseReturnDetail: { returnId: number };
+  PurchaseReturnForm: { poId: number; supplierId: number; warehouseId: number };
 };
+
 // ── Invoices 
 export type InvoiceStatus = 'draft' | 'finalized' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled';
 
@@ -606,4 +613,81 @@ export interface Batch {
   is_expired: boolean;
   days_until_expiry: number | null;
   created_at: string;
+}
+
+// ── Sales Returns 
+export interface SalesReturnItem {
+  id: number;
+  product: number;
+  product_name: string;
+  product_sku: string;
+  quantity: string;
+  unit_price: string;
+  disposition: 'inspection' | 'restock' | 'damaged' | 'scrap';
+  line_total: string;
+}
+
+export interface SalesReturn {
+  id: number;
+  organisation: number;
+  number: string;
+  sales_order: number;
+  order_number: string;
+  customer: number;
+  customer_name: string;
+  warehouse: number;
+  warehouse_name: string;
+  return_date: string;
+  reason: string;
+  status: 'draft' | 'approved' | 'completed' | 'cancelled';
+  status_display: string;
+  notes: string;
+  items: SalesReturnItem[];
+  rma_number: string;
+  return_carrier: string;
+  return_tracking_number: string;
+  return_received_at: string | null;
+  refund_status: 'none' | 'pending' | 'processed';
+  refund_amount: string;
+  refund_method: string;
+  refund_reference: string;
+  refunded_at: string | null;
+  approved_by: number | null;
+  approved_by_name: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: number | null;
+}
+
+// ── Purchase Returns 
+export interface PurchaseReturnItem {
+  id: number;
+  product: number;
+  product_name: string;
+  product_sku: string;
+  quantity: string;
+  unit_price: string;
+  line_total: string;
+}
+
+export interface PurchaseReturn {
+  id: number;
+  organisation: number;
+  number: string;
+  purchase_order: number;
+  po_number: string;
+  supplier: number;
+  supplier_name: string;
+  warehouse: number;
+  warehouse_name: string;
+  return_date: string;
+  reason: string;
+  status: 'draft' | 'approved' | 'completed' | 'cancelled';
+  status_display: string;
+  notes: string;
+  items: PurchaseReturnItem[];
+  created_at: string;
+  updated_at: string;
+  created_by: number | null;
 }

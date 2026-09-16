@@ -34,6 +34,13 @@ import InvoiceFormScreen from '../screens/InvoiceForm/InvoiceForm';
 import DispatchesScreen from '../screens/Dispatches/Dispatches';
 import DispatchDetailScreen from '../screens/DispatchDetail/DispatchDetail';
 import PackingSlipPreviewScreen from '../screens/PackingSlipPreview/PackingSlipPreview';
+import SalesReturnsScreen from '../screens/SalesReturns/SalesReturns';
+import SalesReturnDetailScreen from '../screens/SalesReturnDetail/SalesReturnDetail';
+import SalesReturnFormScreen from '../screens/SalesReturnForm/SalesReturnForm';
+import PurchaseReturnsScreen from '../screens/PurchaseReturns/PurchaseReturns';
+import PurchaseReturnDetailScreen from '../screens/PurchaseReturnDetail/PurchaseReturnDetail';
+import PurchaseReturnFormScreen from '../screens/PurchaseReturnForm/PurchaseReturnForm';
+
 const DRAWER_WIDTH = 280;
 
 const Tab = createBottomTabNavigator();
@@ -82,6 +89,8 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
     { label: 'Notifications', icon: '🔔', onPress: () => navigateTo('MainTabs', { screen: 'Alerts' }) },
     { label: 'My Profile', icon: '👤', onPress: () => navigateTo('Profile') },
     { label: 'Settings', icon: '⚙️', onPress: () => navigateTo('Settings') },
+    { label: 'Sales Returns', icon: '🔄', onPress: () => navigateTo('SalesReturns') },
+    { label: 'Purchase Returns', icon: '📤', onPress: () => navigateTo('PurchaseReturns') },
   ];
 
   return (
@@ -295,6 +304,20 @@ function MainStack({ onLogout }: Props) {
       </Stack.Screen>
       <Stack.Screen name="PackingSlipPreview" options={{ headerShown: true, title: 'Packing Slip' }}>
         {(props: any) => <PackingSlipPreviewScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="SalesReturns" component={SalesReturnsScreen} options={{ headerShown: true, title: 'Sales Returns' }} />
+      <Stack.Screen name="SalesReturnDetail" options={{ headerShown: true, title: 'Return Detail' }}>
+        {(props: any) => <SalesReturnDetailScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="SalesReturnForm" options={{ headerShown: true, title: 'New Sales Return' }}>
+        {(props: any) => <SalesReturnFormScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="PurchaseReturns" component={PurchaseReturnsScreen} options={{ headerShown: true, title: 'Purchase Returns' }} />
+      <Stack.Screen name="PurchaseReturnDetail" options={{ headerShown: true, title: 'Return Detail' }}>
+        {(props: any) => <PurchaseReturnDetailScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="PurchaseReturnForm" options={{ headerShown: true, title: 'New Purchase Return' }}>
+        {(props: any) => <PurchaseReturnFormScreen {...props} />}
       </Stack.Screen>
     </Stack.Navigator>
   );

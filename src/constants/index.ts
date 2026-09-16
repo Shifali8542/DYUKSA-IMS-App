@@ -99,3 +99,24 @@ export const STORAGE_KEYS = {
   THEME_MODE:    'dyuksa_theme_mode',
   ONBOARDING:    'dyuksa_onboarding_done',
 } as const;
+
+export const RETURN_STATUS_LABEL: Record<string, string> = {
+  draft:     'Draft',
+  approved:  'Approved',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+export const DISPOSITION_LABEL: Record<string, string> = {
+  inspection: 'Under Inspection',
+  restock:    'Restock',
+  damaged:    'Damaged',
+  scrap:      'Scrap',
+};
+
+export const DISPOSITION_ICON: Record<string, string> = {
+  inspection: '🔍',
+  restock:    '📥',
+  damaged:    '💥',
+  scrap:      '🗑️',
+};
