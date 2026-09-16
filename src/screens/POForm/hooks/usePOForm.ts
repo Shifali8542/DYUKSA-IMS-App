@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { OrderApi, WarehouseApi, ProductApi } from '../../../api/api';
+import { OrderApi, CustomerApi, WarehouseApi, ProductApi } from '../../../api/api';
+import { todayStr } from '../../../utils/formUtils';
 import { parseBackendError } from '../../../utils/parseError';
 import type { Warehouse, Product, Supplier } from '../../../types';
 
@@ -31,41 +32,50 @@ const emptyItem = (): POLineItem => ({
   tax_rate: '0',
 });
 
-const today = () => new Date().toISOString().split('T')[0];
 
 export function usePOForm() {
   const [form, setForm] = useState<POFormFields>({
     supplier_id: null, warehouse_id: null,
-    order_date: today(), expected_date: '',
+    order_date: todayStr(), expected_date: '',
     notes: '', items: [emptyItem()],
   });
-  const [suppliers,  setSuppliers]  = useState<Supplier[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [products,   setProducts]   = useState<Product[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
-  const [saved,      setSaved]      = useState(false);
-  const [errors,     setErrors]     = useState<Record<string, string>>({});
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [sups, whs, prods] = await Promise.all([
+      const [sups, whs] = await Promise.all([
         OrderApi.getSuppliers(),
         WarehouseApi.getWarehouses({ is_active: true }),
-        ProductApi.getProducts({ is_active: true, page_size: 200 }),
       ]);
       setSuppliers(Array.isArray(sups) ? sups : []);
       setWarehouses(Array.isArray(whs) ? whs : []);
-      setProducts(prods.results ?? []);
     } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to load form data');
+      Alert.alert('Error', parseBackendError(e));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  async function searchProducts(query: string) {
+    try {
+      const res = await ProductApi.getProducts({
+        is_active: true,
+        search: query || undefined,
+        page_size: 30,
+      });
+      setProducts(res.results ?? []);
+    } catch {
+    }
+  }
 
   function setField<K extends keyof POFormFields>(key: K, value: POFormFields[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -174,6 +184,6 @@ export function usePOForm() {
     suppliers, warehouses, products,
     loading, saving, saved,
     updateItem, selectProduct, addItem, removeItem,
-    getSubtotal, handleSave,
+    getSubtotal, handleSave, searchProducts,
   };
 }

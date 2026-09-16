@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DispatchApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import { DISPATCH_STATUS_LABEL } from '../../../constants';
 import type { DispatchNote, DispatchStatus, MainStackParamList } from '../../../types';
 
@@ -34,7 +35,7 @@ export function useDispatchDetail(dispatchId: number) {
             const data = await DispatchApi.getDispatch(dispatchId);
             setDispatch(data);
         } catch (e: any) {
-            setError(e?.message ?? 'Failed to load dispatch');
+            setError(parseBackendError(e));
         } finally {
             setLoading(false);
         }
@@ -56,7 +57,7 @@ export function useDispatchDetail(dispatchId: number) {
         _confirmTransition(to, label, {});
     }
 
-      function _confirmTransition(to: DispatchStatus, label: string, extra: Record<string, string>) {
+    function _confirmTransition(to: DispatchStatus, label: string, extra: Record<string, string>) {
         Alert.alert(
             `${label}?`,
             `Move dispatch to "${label}" status?`,
@@ -79,7 +80,7 @@ export function useDispatchDetail(dispatchId: number) {
             setDispatch(updated);
             Alert.alert('Updated', `Dispatch moved to "${DISPATCH_STATUS_LABEL[to]}".`);
         } catch (e: any) {
-            const msg = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? e?.message ?? 'Transition failed.';
+            const msg = parseBackendError(e);
             Alert.alert('Error', msg);
         } finally {
             setTransitioning(false);

@@ -1,19 +1,20 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { OrderApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import type { SalesOrder, PurchaseOrder } from '../../../types';
 
 export type OrderTab = 'sales' | 'purchase';
 
 export function useOrders() {
-  const [tab,         setTab]         = useState<OrderTab>('sales');
-  const [search,      setSearch]      = useState('');
-  const [status,      setStatus]      = useState('all');
+  const [tab, setTab] = useState<OrderTab>('sales');
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
   const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
-  const [poOrders,    setPoOrders]    = useState<PurchaseOrder[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [refreshing,  setRefreshing]  = useState(false);
-  const [error,       setError]       = useState<string | null>(null);
+  const [poOrders, setPoOrders] = useState<PurchaseOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -32,14 +33,14 @@ export function useOrders() {
         setPoOrders(res.results ?? []);
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load orders');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, [tab, search, status]);
 
-    useFocusEffect(
+  useFocusEffect(
     useCallback(() => { fetchOrders(); }, [fetchOrders])
   );
 

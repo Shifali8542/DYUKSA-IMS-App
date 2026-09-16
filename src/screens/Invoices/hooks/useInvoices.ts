@@ -1,17 +1,18 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { InvoiceApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import type { Invoice } from '../../../types';
 
 export type InvoiceFilter = 'all' | 'draft' | 'finalized' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled';
 
 export function useInvoices() {
-  const [filter,     setFilter]     = useState<InvoiceFilter>('all');
-  const [search,     setSearch]     = useState('');
-  const [invoices,   setInvoices]   = useState<Invoice[]>([]);
-  const [loading,    setLoading]    = useState(true);
+  const [filter, setFilter] = useState<InvoiceFilter>('all');
+  const [search, setSearch] = useState('');
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchInvoices = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -23,7 +24,7 @@ export function useInvoices() {
       });
       setInvoices(res.results ?? []);
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load invoices');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
       setRefreshing(false);

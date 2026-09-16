@@ -1,30 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { SalesReturnApi, OrderApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
+import { todayStr, nextLineKey } from '../../../utils/formUtils';
+import type { ReturnLineItem } from '../../../utils/formUtils';
 import type { SalesOrder } from '../../../types';
 
-export interface ReturnLineItem {
-    key: string;
-    product_id: number;
-    product_name: string;
-    product_sku: string;
-    max_qty: number;
-    quantity: string;
-    unit_price: string;
+export interface SalesReturnLineItem extends ReturnLineItem {
     disposition: 'inspection' | 'restock' | 'damaged' | 'scrap';
-    selected: boolean;
-}
-
-let keyCounter = 0;
-
-function todayStr(): string {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function useSalesReturnForm(orderId: number, customerId: number, warehouseId: number) {
     const [order, setOrder] = useState<SalesOrder | null>(null);
-    const [items, setItems] = useState<ReturnLineItem[]>([]);
+    const [items, setItems] = useState<SalesReturnLineItem[]>([]);
     const [reason, setReason] = useState('');
     const [notes, setNotes] = useState('');
     const [returnDate, setReturnDate] = useState(todayStr());
@@ -37,8 +25,8 @@ export function useSalesReturnForm(orderId: number, customerId: number, warehous
         try {
             const o = await OrderApi.getSalesOrder(orderId);
             setOrder(o);
-            const lineItems: ReturnLineItem[] = (o.items ?? []).map((item: any) => ({
-                key: `ri_${++keyCounter}`,
+            const lineItems: SalesReturnLineItem[] = (o.items ?? []).map((item: any) => ({
+                key: nextLineKey('ri'),
                 product_id: item.product ?? item.product_id,
                 product_name: item.product_name ?? item.name ?? '',
                 product_sku: item.product_sku ?? item.sku ?? '',
@@ -62,7 +50,7 @@ export function useSalesReturnForm(orderId: number, customerId: number, warehous
         setItems((prev) => prev.map((i) => i.key === key ? { ...i, selected: !i.selected } : i));
     }
 
-    function updateItem(key: string, field: keyof ReturnLineItem, value: any) {
+    function updateItem(key: string, field: keyof SalesReturnLineItem, value: any) {
         setItems((prev) => prev.map((i) => i.key === key ? { ...i, [field]: value } : i));
     }
 
@@ -108,7 +96,7 @@ export function useSalesReturnForm(orderId: number, customerId: number, warehous
             setSavedId(sr.id);
             return true;
         } catch (e: any) {
-            Alert.alert('Error', e?.response?.data?.error?.message ?? 'Failed to create return.');
+            Alert.alert('Error', parseBackendError(e));
             return false;
         } finally {
             setSaving(false);

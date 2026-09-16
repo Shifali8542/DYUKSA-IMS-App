@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { ProductApi, CategoryApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import type { Product, Category } from '../../../types';
 import { PAGE_SIZE } from '../../../constants';
 
@@ -43,7 +44,7 @@ export function useInventory() {
       setHasMore(!!res.next);
       setPage(pageNum);
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load products');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -20,7 +20,7 @@ export default function POFormScreen({ navigation }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const {
     form, setField, errors,
-    suppliers, warehouses, products,
+    suppliers, warehouses, products, searchProducts,
     loading, saving, saved,
     updateItem, selectProduct, addItem, removeItem,
     getSubtotal, handleSave,
@@ -51,18 +51,19 @@ export default function POFormScreen({ navigation }: Props) {
   const selectedWarehouse = warehouses.find((w) => w.id === form.warehouse_id);
   const subtotal = getSubtotal();
 
-  // ── Picker Modal (reusable for supplier/warehouse/product) ──
+  // ── Picker Modal
   function PickerModal<T extends { id: number; name: string }>({
-    visible, title, data, onSelect, onClose, renderExtra,
+    visible, title, data, onSelect, onClose, renderExtra, onSearch,
   }: {
     visible: boolean; title: string; data: T[];
     onSelect: (item: T) => void; onClose: () => void;
     renderExtra?: (item: T) => string;
+    onSearch?: (query: string) => void;
   }) {
     const filtered = pickerSearch
       ? data.filter((d) => d.name.toLowerCase().includes(pickerSearch.toLowerCase()) ||
-          (('sku' in d) ? (d as any).sku?.toLowerCase().includes(pickerSearch.toLowerCase()) : false) ||
-          (('code' in d) ? (d as any).code?.toLowerCase().includes(pickerSearch.toLowerCase()) : false))
+        (('sku' in d) ? (d as any).sku?.toLowerCase().includes(pickerSearch.toLowerCase()) : false) ||
+        (('code' in d) ? (d as any).code?.toLowerCase().includes(pickerSearch.toLowerCase()) : false))
       : data;
 
     return (
@@ -71,7 +72,7 @@ export default function POFormScreen({ navigation }: Props) {
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 20 }}
           onPress={onClose}
         >
-          <Pressable onPress={() => {}} style={{
+          <Pressable onPress={() => { }} style={{
             backgroundColor: colors.surface, borderRadius: borderRadius.lg,
             maxHeight: '70%', overflow: 'hidden',
             shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
@@ -81,7 +82,11 @@ export default function POFormScreen({ navigation }: Props) {
               <Text style={{ color: colors.textPrimary, fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: spacing.sm }}>
                 {title}
               </Text>
-              <SearchBar value={pickerSearch} onChangeText={setPickerSearch} placeholder={`Search ${title.toLowerCase()}...`} />
+              <SearchBar
+                value={pickerSearch}
+                onChangeText={(v) => { setPickerSearch(v); onSearch?.(v); }}
+                placeholder={`Search ${title.toLowerCase()}...`}
+              />
             </View>
             <FlatList
               data={filtered}
@@ -333,6 +338,7 @@ export default function POFormScreen({ navigation }: Props) {
         visible={productPickerIndex !== null}
         title="Select Product"
         data={products}
+        onSearch={searchProducts}
         onSelect={(p) => { if (productPickerIndex !== null) selectProduct(productPickerIndex, p); }}
         onClose={() => setProductPickerIndex(null)}
         renderExtra={(p: any) => `SKU: ${p.sku} • ₹${p.cost_price}`}

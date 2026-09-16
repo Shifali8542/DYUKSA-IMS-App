@@ -2,10 +2,9 @@ import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { PurchaseReturnApi } from '../../../api/api';
 import type { PurchaseReturn } from '../../../types';
+import { parseBackendError } from '../../../utils/parseError';
+import { type ReturnFilter, RETURN_FILTERS } from '../../../utils/formUtils';
 
-export type ReturnFilter = 'all' | 'draft' | 'approved' | 'completed' | 'cancelled';
-
-const FILTERS: ReturnFilter[] = ['all', 'draft', 'approved', 'completed', 'cancelled'];
 
 export function usePurchaseReturns() {
   const [filter,     setFilter]     = useState<ReturnFilter>('all');
@@ -25,7 +24,7 @@ export function usePurchaseReturns() {
       });
       setReturns(res.results ?? []);
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load purchase returns');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -34,5 +33,5 @@ export function usePurchaseReturns() {
 
   useFocusEffect(useCallback(() => { fetchReturns(); }, [fetchReturns]));
 
-  return { filter, setFilter, search, setSearch, returns, loading, refreshing, error, filters: FILTERS, refresh: () => fetchReturns(true) };
+  return { filter, setFilter, search, setSearch, returns, loading, refreshing, error, filters: RETURN_FILTERS, refresh: () => fetchReturns(true) };
 }

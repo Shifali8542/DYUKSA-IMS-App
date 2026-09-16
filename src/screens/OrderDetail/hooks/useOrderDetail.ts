@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OrderApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import { ORDER_STATUS_LABEL } from '../../../constants';
 import type { SalesOrder, MainStackParamList } from '../../../types';
 
@@ -56,7 +57,7 @@ export function useOrderDetail(orderId: number) {
       const data = await OrderApi.getSalesOrder(orderId);
       setOrder(data);
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load order');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
     }
@@ -110,7 +111,7 @@ export function useOrderDetail(orderId: number) {
               ]);
               await fetchOrder();
             } catch (e: any) {
-              const msg = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? e?.message ?? 'Failed to create dispatch.';
+              const msg = parseBackendError(e);
               Alert.alert('Error', msg);
             } finally {
               setTransitioning(false);
@@ -136,7 +137,7 @@ export function useOrderDetail(orderId: number) {
               ]);
               await fetchOrder();
             } catch (e: any) {
-              Alert.alert('Error', e?.response?.data?.message ?? e?.response?.data?.error?.message ?? 'Failed to generate invoice.');
+              Alert.alert('Error', parseBackendError(e));
             } finally {
               setTransitioning(false);
             }
@@ -160,7 +161,7 @@ export function useOrderDetail(orderId: number) {
               : await OrderApi.cancelOrder(order.id);
             setOrder(updated ?? { ...order, status: action === 'confirm' ? 'confirmed' : 'cancelled' });
           } catch (e: any) {
-            const errMsg = e?.response?.data?.message ?? e?.response?.data?.error?.message ?? e?.response?.data?.error ?? JSON.stringify(e?.response?.data) ?? 'Failed to update status.';
+            const errMsg = parseBackendError(e);
             Alert.alert('Error', errMsg);
           } finally {
             setTransitioning(false);

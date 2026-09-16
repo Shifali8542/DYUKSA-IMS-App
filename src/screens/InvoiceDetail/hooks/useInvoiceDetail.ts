@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { InvoiceApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import { PAYMENT_METHOD_LABEL } from '../../../constants';
 import type { Invoice } from '../../../types';
 
 export function useInvoiceDetail(invoiceId: number) {
-  const [invoice,    setInvoice]    = useState<Invoice | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState<string | null>(null);
-  const [paying,     setPaying]     = useState(false);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
 
   const fetchInvoice = useCallback(async () => {
@@ -18,7 +19,7 @@ export function useInvoiceDetail(invoiceId: number) {
       const data = await InvoiceApi.getInvoice(invoiceId);
       setInvoice(data);
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load invoice');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
     }
@@ -41,7 +42,7 @@ export function useInvoiceDetail(invoiceId: number) {
       setShowPayModal(false);
       await fetchInvoice();
     } catch (e: any) {
-      Alert.alert('Payment Failed', e?.message ?? 'Could not record payment.');
+      Alert.alert('Payment Failed', parseBackendError(e));
     } finally {
       setPaying(false);
     }

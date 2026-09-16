@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ProductApi, ProductImageApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import type { Product, ProductImage, ProductStockResponse, StockMovement, Batch } from '../../../types';
 
 export function useProductDetails(productId: number) {
@@ -39,7 +40,7 @@ export function useProductDetails(productId: number) {
         setMovements(mvRes.results ?? []);
       } catch {
         setMovements([]);
-            } finally {
+      } finally {
         setMovementsLoading(false);
       }
 
@@ -52,7 +53,7 @@ export function useProductDetails(productId: number) {
         }
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load product');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
     }
@@ -60,5 +61,5 @@ export function useProductDetails(productId: number) {
 
   useEffect(() => { fetchProduct(); }, [fetchProduct]);
 
-      return { product, stockLevels, images, movements, movementsLoading, batches, loading, error, refresh: fetchProduct };
+  return { product, stockLevels, images, movements, movementsLoading, batches, loading, error, refresh: fetchProduct };
 }

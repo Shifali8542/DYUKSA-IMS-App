@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { InvoiceSettingsApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import type { InvoiceSettings } from '../../../types';
 
 const EMPTY_SETTINGS: Partial<InvoiceSettings> = {
@@ -14,10 +15,10 @@ const EMPTY_SETTINGS: Partial<InvoiceSettings> = {
 };
 
 export function useInvoiceSettings() {
-  const [form, setForm]       = useState<Partial<InvoiceSettings>>(EMPTY_SETTINGS);
+  const [form, setForm] = useState<Partial<InvoiceSettings>>(EMPTY_SETTINGS);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
@@ -26,7 +27,7 @@ export function useInvoiceSettings() {
       const data = await InvoiceSettingsApi.getSettings();
       setForm({ ...EMPTY_SETTINGS, ...data });
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load settings');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
     }
@@ -46,7 +47,7 @@ export function useInvoiceSettings() {
       Alert.alert('Saved', 'Invoice settings updated successfully.');
       return true;
     } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to save settings.');
+      Alert.alert('Error', parseBackendError(e));
       return false;
     } finally {
       setSaving(false);

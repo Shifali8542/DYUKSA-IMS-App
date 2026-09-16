@@ -1,56 +1,45 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { InvoiceApi, CustomerApi, ProductApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
+import { todayStr, futureDateStr, nextLineKey } from '../../../utils/formUtils';
 import type { Customer, Product } from '../../../types';
 
 export interface InvoiceLineItem {
-  key:          string;
-  product_id:   number | null;
+  key: string;
+  product_id: number | null;
   product_name: string;
-  description:  string;
-  quantity:     string;
-  unit_price:   string;
-  discount:     string;
-  tax_rate:     string;
+  description: string;
+  quantity: string;
+  unit_price: string;
+  discount: string;
+  tax_rate: string;
 }
 
 interface InvoiceFormFields {
-  customer_id:  number | null;
+  customer_id: number | null;
   invoice_date: string;
-  due_date:     string;
-  notes:        string;
+  due_date: string;
+  notes: string;
 }
 
 type FormErrors = Record<string, string>;
 
-let keyCounter = 0;
-function nextKey() { return `inv_item_${++keyCounter}`; }
-
 function emptyItem(): InvoiceLineItem {
-  return { key: nextKey(), product_id: null, product_name: '', description: '', quantity: '1', unit_price: '', discount: '0', tax_rate: '0' };
-}
-
-function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function dueDateStr(days = 30): string {
-  const d = new Date(Date.now() + days * 86400000);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return { key: nextLineKey('inv'), product_id: null, product_name: '', description: '', quantity: '1', unit_price: '', discount: '0', tax_rate: '0' };
 }
 
 export function useInvoiceForm() {
   const [form, setForm] = useState<InvoiceFormFields>({
-    customer_id: null, invoice_date: todayStr(), due_date: dueDateStr(), notes: '',
+    customer_id: null, invoice_date: todayStr(), due_date: futureDateStr(30), notes: '',
   });
-  const [items,     setItems]     = useState<InvoiceLineItem[]>([emptyItem()]);
-  const [errors,    setErrors]    = useState<FormErrors>({});
+  const [items, setItems] = useState<InvoiceLineItem[]>([emptyItem()]);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [products,  setProducts]  = useState<Product[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [saving,    setSaving]    = useState(false);
-  const [savedId,   setSavedId]   = useState<number | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -60,7 +49,7 @@ export function useInvoiceForm() {
       ]);
       setCustomers(custRes.results ?? []);
     } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to load data');
+      Alert.alert('Error', parseBackendError(e));
     } finally {
       setLoading(false);
     }
@@ -153,7 +142,7 @@ export function useInvoiceForm() {
       setSavedId(invoice.id);
       return true;
     } catch (e: any) {
-      const msg = e?.response?.data?.message ?? e?.response?.data?.error?.message ?? e?.message ?? 'Failed to create invoice';
+      const msg = parseBackendError(e);
       Alert.alert('Error', msg);
       return false;
     } finally {

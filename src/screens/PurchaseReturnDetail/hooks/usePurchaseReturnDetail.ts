@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { PurchaseReturnApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import type { PurchaseReturn } from '../../../types';
 
 export function usePurchaseReturnDetail(returnId: number) {
-  const [pr, setPr]               = useState<PurchaseReturn | null>(null);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [pr, setPr] = useState<PurchaseReturn | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
 
   const fetch = useCallback(async () => {
@@ -15,7 +16,7 @@ export function usePurchaseReturnDetail(returnId: number) {
     try {
       setPr(await PurchaseReturnApi.get(returnId));
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load return');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
     }
@@ -40,7 +41,7 @@ export function usePurchaseReturnDetail(returnId: number) {
               setPr(updated);
               Alert.alert('Approved', 'Purchase return approved and stock deducted.');
             } catch (e: any) {
-              Alert.alert('Error', e?.response?.data?.error?.message ?? 'Failed to approve.');
+              Alert.alert('Error', parseBackendError(e));
             } finally {
               setApproving(false);
             }

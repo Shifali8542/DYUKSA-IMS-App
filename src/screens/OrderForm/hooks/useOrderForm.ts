@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { OrderApi, CustomerApi, WarehouseApi, ProductApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
+import { todayStr, nextLineKey } from '../../../utils/formUtils';
 import type {
   Customer, Warehouse, Product,
   CreateOrderPayload, CreateOrderItemPayload,
@@ -27,16 +29,8 @@ interface OrderFormFields {
 
 type FormErrors = Record<string, string>;
 
-let keyCounter = 0;
-function nextKey() { return `item_${++keyCounter}`; }
-
 function emptyItem(): OrderLineItem {
-  return { key: nextKey(), product_id: null, product_name: '', quantity: '1', unit_price: '', discount: '0', tax_rate: '0' };
-}
-
-function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return { key: nextLineKey('order'), product_id: null, product_name: '', quantity: '1', unit_price: '', discount: '0', tax_rate: '0' };
 }
 
 export function useOrderForm() {
@@ -64,7 +58,7 @@ export function useOrderForm() {
       setCustomers(custRes.results ?? []);
       setWarehouses(Array.isArray(whRes) ? whRes : []);
     } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to load data');
+      Alert.alert('Error', parseBackendError(e));
     } finally {
       setLoading(false);
     }
@@ -176,11 +170,7 @@ export function useOrderForm() {
       setSaved(true);
       return true;
     } catch (e: any) {
-      const msg = e?.response?.data?.message
-        ?? e?.response?.data?.error?.message
-        ?? e?.response?.data?.detail
-        ?? e?.message
-        ?? 'Failed to create order';
+      const msg = parseBackendError(e);
       Alert.alert('Error', msg);
       return false;
     } finally {

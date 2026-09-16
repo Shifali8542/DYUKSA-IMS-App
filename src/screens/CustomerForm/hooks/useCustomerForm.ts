@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { CustomerApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import type { CustomerCreatePayload } from '../../../types';
 
 interface FormFields {
@@ -44,7 +45,7 @@ export function useCustomerForm(customerId?: number) {
         city:       c.city ?? '',
       });
     } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to load customer');
+      Alert.alert('Error', parseBackendError(e));
     } finally {
       setLoading(false);
     }
@@ -107,7 +108,7 @@ export function useCustomerForm(customerId?: number) {
         }
       }
 
-      Alert.alert('Error', e?.response?.data?.message ?? e?.message ?? 'Failed to save customer');
+      Alert.alert('Error', parseBackendError(e));
       return false;
     } finally {
       setSaving(false);

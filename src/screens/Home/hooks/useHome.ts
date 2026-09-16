@@ -1,24 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DashboardApi, ProductApi } from '../../../api/api';
+import { parseBackendError } from '../../../utils/parseError';
 import { tokenStorage } from '../../../utils/tokenStorage';
 import { getUserDisplayName } from '../../../utils/jwt';
 import type { DashboardData, Product } from '../../../types';
 
 interface HomeState {
-  dashboard:   DashboardData | null;
-  lowStock:    Product[];
-  userName:    string;
-  loading:     boolean;
-  error:       string | null;
-  refresh:     () => void;
+  dashboard: DashboardData | null;
+  lowStock: Product[];
+  userName: string;
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
 }
 
 export function useHome(): HomeState {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [lowStock,  setLowStock]  = useState<Product[]>([]);
-  const [userName,  setUserName]  = useState('');
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState<string | null>(null);
+  const [lowStock, setLowStock] = useState<Product[]>([]);
+  const [userName, setUserName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -41,7 +42,7 @@ export function useHome(): HomeState {
         setLowStock([]);
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load dashboard');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
     }

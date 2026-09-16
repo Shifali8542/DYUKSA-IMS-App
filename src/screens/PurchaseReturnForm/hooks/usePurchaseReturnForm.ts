@@ -1,32 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { PurchaseReturnApi, OrderApi } from '../../../api/api';
-
-export interface ReturnLineItem {
-  key: string;
-  product_id: number;
-  product_name: string;
-  product_sku: string;
-  max_qty: number;
-  quantity: string;
-  unit_price: string;
-  selected: boolean;
-}
-
-let keyCounter = 0;
-
-function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+import { parseBackendError } from '../../../utils/parseError';
+import { todayStr, nextLineKey } from '../../../utils/formUtils';
+import type { ReturnLineItem } from '../../../utils/formUtils';
 
 export function usePurchaseReturnForm(poId: number, supplierId: number, warehouseId: number) {
-  const [items, setItems]     = useState<ReturnLineItem[]>([]);
-  const [reason, setReason]   = useState('');
-  const [notes, setNotes]     = useState('');
+  const [items, setItems] = useState<ReturnLineItem[]>([]);
+  const [reason, setReason] = useState('');
+  const [notes, setNotes] = useState('');
   const [returnDate, setReturnDate] = useState(todayStr());
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
+  const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<number | null>(null);
 
   const loadPO = useCallback(async () => {
@@ -35,7 +20,7 @@ export function usePurchaseReturnForm(poId: number, supplierId: number, warehous
       const { data } = await (await import('../../../api/api')).imsClient.get(`/api/v1/purchase-orders/${poId}/`);
       const po = data.data ?? data;
       const lineItems: ReturnLineItem[] = (po.items ?? []).map((item: any) => ({
-        key: `pri_${++keyCounter}`,
+        key: nextLineKey('pri'),
         product_id: item.product ?? item.product_id,
         product_name: item.product_name ?? '',
         product_sku: item.product_sku ?? '',
@@ -102,7 +87,7 @@ export function usePurchaseReturnForm(poId: number, supplierId: number, warehous
       setSavedId(pr.id);
       return true;
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.error?.message ?? 'Failed to create return.');
+      Alert.alert('Error', parseBackendError(e));
       return false;
     } finally {
       setSaving(false);
