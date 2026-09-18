@@ -17,7 +17,7 @@ import ErrorState from '../../components/ErrorState/ErrorState';
 import Badge from '../../components/Badge/Badge';
 import Card from '../../components/Card/Card';
 import type { MainStackParamList } from '../../types';
-
+import { DISPOSITION_LABEL, DISPOSITION_ICON, MOVEMENT_TYPE_ICON, MOVEMENT_TYPE_COLOR, MOVEMENT_TYPE_LABEL } from '../../constants';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'ProductDetails'>;
 
@@ -434,21 +434,9 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
           ) : (
             movements.map((mv, idx) => {
               const isPositive = parseFloat(mv.quantity) > 0;
-              const typeColors: Record<string, { bg: string; text: string; icon: string }> = {
-                receipt: { bg: '#ECFDF5', text: '#10B981', icon: '📥' },
-                adjustment_in: { bg: '#ECFDF5', text: '#10B981', icon: '➕' },
-                return: { bg: '#EFF6FF', text: '#3B82F6', icon: '🔄' },
-                transfer_in: { bg: '#EFF6FF', text: '#3B82F6', icon: '📦' },
-                dispatch: { bg: '#FFFBEB', text: '#F59E0B', icon: '🚚' },
-                delivery: { bg: '#FFFBEB', text: '#F59E0B', icon: '✅' },
-                adjustment_out: { bg: '#FEE2E2', text: '#DC2626', icon: '➖' },
-                reservation: { bg: '#F5F3FF', text: '#6366F1', icon: '🔒' },
-                release: { bg: '#F5F3FF', text: '#6366F1', icon: '🔓' },
-                damage: { bg: '#FEE2E2', text: '#DC2626', icon: '💥' },
-                transfer_out: { bg: '#FEE2E2', text: '#DC2626', icon: '📤' },
-              };
-              const tc = typeColors[mv.movement_type] ?? { bg: colors.surfaceSecondary, text: colors.textSecondary, icon: '📋' };
-              const typeLabel = mv.movement_type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+              const tc = { ...(MOVEMENT_TYPE_COLOR[mv.movement_type] ?? { bg: colors.surfaceSecondary, text: colors.textSecondary }) };
+              const icon = MOVEMENT_TYPE_ICON[mv.movement_type] ?? '📋';
+              const typeLabel = MOVEMENT_TYPE_LABEL[mv.movement_type] ?? mv.movement_type;
 
               return (
                 <View
@@ -465,7 +453,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
                     width: 36, height: 36, borderRadius: 18,
                     backgroundColor: tc.bg, alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Text style={{ fontSize: 16 }}>{tc.icon}</Text>
+                    <Text style={{ fontSize: 16 }}>{icon}</Text>
                   </View>
 
                   {/* Details */}

@@ -1,8 +1,8 @@
-/** Returns today as YYYY-MM-DD. Replaces the 4 duplicate todayStr() functions. */
+/** Returns today as YYYY-MM-DD.  */
 export function todayStr(): string {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+} 
 
 /** Returns a date N days from now as YYYY-MM-DD. */
 export function futureDateStr(days: number): string {
@@ -10,13 +10,13 @@ export function futureDateStr(days: number): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** Shared line-item key generator — safe across all form hooks. */
+/** Shared line-item key generator */
 let _lineItemCounter = 0;
 export function nextLineKey(prefix = 'item'): string {
     return `${prefix}_${++_lineItemCounter}`;
 }
 
-/** Shared return line item shape — used by both SalesReturnForm and PurchaseReturnForm. */
+/** Shared return line item shape */
 export interface ReturnLineItem {
     key: string;
     product_id: number;

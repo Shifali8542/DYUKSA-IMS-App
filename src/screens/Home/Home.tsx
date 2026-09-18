@@ -13,7 +13,7 @@ import Card from '../../components/Card/Card';
 import StatCard from './components/StatCard';
 import MiniDonutChart from './components/MiniDonutChart';
 import MiniBarChart from './components/MiniBarChart';
-import type { Product } from '../../types';
+
 
 export default function HomeScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
@@ -29,9 +29,9 @@ export default function HomeScreen() {
   // ── Quick Actions ──
   const quickActions = [
     { label: 'Inventory', icon: '📦', onPress: () => navigation.navigate('MainTabs', { screen: 'Inventory' }) },
-    { label: 'Orders',    icon: '📋', onPress: () => navigation.navigate('MainTabs', { screen: 'Orders' }) },
-    { label: 'Scan',      icon: '📷', onPress: () => navigation.navigate('Scanner') },
-    { label: 'Alerts',    icon: '🔔', onPress: () => navigation.navigate('MainTabs', { screen: 'Alerts' }) },
+    { label: 'Orders', icon: '📋', onPress: () => navigation.navigate('MainTabs', { screen: 'Orders' }) },
+    { label: 'Scan', icon: '📷', onPress: () => navigation.navigate('Scanner') },
+    { label: 'Alerts', icon: '🔔', onPress: () => navigation.navigate('MainTabs', { screen: 'Alerts' }) },
   ];
 
   // ── Stock health data for donut ──
@@ -42,9 +42,9 @@ export default function HomeScreen() {
   // ── PO status data for bar chart ──
   const po = d?.purchase_orders;
   const poBars = po ? [
-    { label: 'Draft',    value: po.draft,     color: '#6B7280' },
-    { label: 'Approved', value: po.approved,  color: '#3B82F6' },
-    { label: 'Received', value: po.received,  color: '#10B981' },
+    { label: 'Draft', value: po.draft, color: '#6B7280' },
+    { label: 'Approved', value: po.approved, color: '#3B82F6' },
+    { label: 'Received', value: po.received, color: '#10B981' },
     { label: 'Cancelled', value: po.cancelled, color: '#EF4444' },
   ] : [];
 
@@ -89,14 +89,14 @@ export default function HomeScreen() {
             OVERVIEW
           </Text>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <StatCard icon="📦" label="Products"   value={d?.total_products ?? 0}     iconBg="#EEF2FF" />
-            <StatCard icon="🏭" label="Warehouses" value={d?.total_warehouses ?? 0}   iconBg="#F0FDF4" />
-            <StatCard icon="⚠️" label="Low Stock"  value={d?.low_stock_count ?? 0}    iconBg="#FFFBEB" />
+            <StatCard icon="📦" label="Products" value={d?.total_products ?? 0} iconBg="#EEF2FF" />
+            <StatCard icon="🏭" label="Warehouses" value={d?.total_warehouses ?? 0} iconBg="#F0FDF4" />
+            <StatCard icon="⚠️" label="Low Stock" value={d?.low_stock_count ?? 0} iconBg="#FFFBEB" />
           </View>
           <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
-            <StatCard icon="📋" label="Pending Orders" value={d?.pending_orders ?? 0}     iconBg="#FFF1F2" />
-            <StatCard icon="🚚" label="Today Dispatch" value={d?.today_dispatches ?? 0}   iconBg="#F0F9FF" />
-            <StatCard icon="📤" label="Pending Disp."  value={d?.pending_dispatches ?? 0} iconBg="#FDF4FF" />
+            <StatCard icon="📋" label="Pending Orders" value={d?.pending_orders ?? 0} iconBg="#FFF1F2" />
+            <StatCard icon="🚚" label="Today Dispatch" value={d?.today_dispatches ?? 0} iconBg="#F0F9FF" />
+            <StatCard icon="📤" label="Pending Disp." value={d?.pending_dispatches ?? 0} iconBg="#FDF4FF" />
           </View>
         </View>
 
@@ -113,7 +113,7 @@ export default function HomeScreen() {
               </Text>
               <MiniDonutChart
                 segments={[
-                  { value: healthyStock,  color: '#10B981', label: 'Healthy' },
+                  { value: healthyStock, color: '#10B981', label: 'Healthy' },
                   { value: lowStockCount, color: '#F59E0B', label: 'Low' },
                 ]}
                 size={110}
@@ -207,10 +207,10 @@ export default function HomeScreen() {
               LOW STOCK ALERTS
             </Text>
             <Card style={{ padding: 0, overflow: 'hidden' }}>
-              {lowStock.map((p: Product, index: number) => (
+              {lowStock.map((p, index) => (
                 <TouchableOpacity
-                  key={p.id}
-                  onPress={() => navigation.navigate('ProductDetails', { productId: p.id })}
+                  key={p.product_id}
+                  onPress={() => navigation.navigate('ProductDetails', { productId: p.product_id })}
                   style={{
                     flexDirection: 'row', alignItems: 'center', padding: spacing.base,
                     borderBottomWidth: index < lowStock.length - 1 ? 1 : 0, borderBottomColor: colors.border,
@@ -223,10 +223,10 @@ export default function HomeScreen() {
                     <Text style={{ fontSize: 16 }}>⚠️</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{p.name}</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>SKU: {p.sku}</Text>
+                    <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{p.product_name}</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>SKU: {p.sku} • {p.warehouse}</Text>
                   </View>
-                  <Badge label={`${p.available_stock ?? 0} left`} variant="danger" />
+                  <Badge label={`${p.available} left`} variant="danger" />
                 </TouchableOpacity>
               ))}
             </Card>

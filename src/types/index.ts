@@ -54,6 +54,16 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+export interface LowStockItem {
+  product_id: number;
+  product_name: string;
+  sku: string;
+  on_hand: string;
+  available: string;
+  reorder_level: string;
+  warehouse: string;
+}
+
 // ── User / Profile 
 export interface User {
   id: number;
@@ -483,6 +493,8 @@ export type MainStackParamList = {
   PurchaseReturns: undefined;
   PurchaseReturnDetail: { returnId: number };
   PurchaseReturnForm: { poId: number; supplierId: number; warehouseId: number };
+  Reports: undefined;
+  StockMovements: undefined;
 };
 
 // ── Invoices 
@@ -558,7 +570,10 @@ export interface StockMovement {
   id: number;
   reference: string;
   product: number;
+  product_name: string;
+  product_sku: string;
   warehouse: number;
+  warehouse_name: string;
   movement_type: string;
   quantity: string;
   balance_after: string;
@@ -690,4 +705,49 @@ export interface PurchaseReturn {
   created_at: string;
   updated_at: string;
   created_by: number | null;
+}
+
+// ── Reports
+export interface SalesReportRow {
+  order_number: string;
+  customer_id: number;
+  customer: string;
+  warehouse: string;
+  order_date: string;
+  status: string;
+  total: string;
+}
+
+export interface SalesReportSummary {
+  total_revenue: string;
+  order_count: number;
+}
+
+export interface InventoryReportRow {
+  product_id: number;
+  product_name: string;
+  sku: string;
+  category: string | null;
+  warehouse: string;
+  on_hand: string;
+  available: string;
+  reorder_level: string;
+  is_low_stock: boolean;
+  cost_price: string;
+  stock_value: string;
+}
+
+export interface PurchaseReportRow {
+  po_number: string;
+  supplier: string;
+  warehouse: string;
+  order_date: string;
+  status: string;
+  total: string;
+  items_count: number;
+}
+
+export interface PurchaseReportSummary {
+  total_value: string;
+  po_count: number;
 }

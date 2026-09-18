@@ -40,6 +40,9 @@ import SalesReturnFormScreen from '../screens/SalesReturnForm/SalesReturnForm';
 import PurchaseReturnsScreen from '../screens/PurchaseReturns/PurchaseReturns';
 import PurchaseReturnDetailScreen from '../screens/PurchaseReturnDetail/PurchaseReturnDetail';
 import PurchaseReturnFormScreen from '../screens/PurchaseReturnForm/PurchaseReturnForm';
+import ReportsScreen from '../screens/Reports/Reports';
+import StockMovementsScreen from '../screens/StockMovements/StockMovements';
+
 
 const DRAWER_WIDTH = 280;
 
@@ -91,6 +94,8 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
     { label: 'Settings', icon: '⚙️', onPress: () => navigateTo('Settings') },
     { label: 'Sales Returns', icon: '🔄', onPress: () => navigateTo('SalesReturns') },
     { label: 'Purchase Returns', icon: '📤', onPress: () => navigateTo('PurchaseReturns') },
+    { label: 'Reports', icon: '📊', onPress: () => navigateTo('Reports') },
+    { label: 'Stock Movements', icon: '📋', onPress: () => navigateTo('StockMovements') },
   ];
 
   return (
@@ -319,6 +324,8 @@ function MainStack({ onLogout }: Props) {
       <Stack.Screen name="PurchaseReturnForm" options={{ headerShown: true, title: 'New Purchase Return' }}>
         {(props: any) => <PurchaseReturnFormScreen {...props} />}
       </Stack.Screen>
+      <Stack.Screen name="Reports" component={ReportsScreen} options={{ headerShown: true, title: 'Reports' }} />
+      <Stack.Screen name="StockMovements" component={StockMovementsScreen} options={{ headerShown: true, title: 'Stock Movements' }} />
     </Stack.Navigator>
   );
 }

@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DashboardApi, ProductApi } from '../../../api/api';
+import { DashboardApi } from '../../../api/api';
 import { parseBackendError } from '../../../utils/parseError';
 import { tokenStorage } from '../../../utils/tokenStorage';
 import { getUserDisplayName } from '../../../utils/jwt';
-import type { DashboardData, Product } from '../../../types';
+import type { DashboardData, LowStockItem  } from '../../../types';
 
 interface HomeState {
   dashboard: DashboardData | null;
-  lowStock: Product[];
+  lowStock: LowStockItem[];
   userName: string;
   loading: boolean;
   error: string | null;
@@ -16,7 +16,7 @@ interface HomeState {
 
 export function useHome(): HomeState {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [lowStock, setLowStock] = useState<Product[]>([]);
+  const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,12 +32,10 @@ export function useHome(): HomeState {
       setDashboard(dash);
       if (token) setUserName(getUserDisplayName(token));
 
-      // Fetch low stock products separately (won't block dashboard)
+      // Fetch actual low stock products from inventory report endpoint
       try {
-        const lowStockRes = await ProductApi.getProducts({ is_active: true, page_size: 5 } as any);
-        // Filter for low stock items if backend returns the flag
-        const items = lowStockRes.results ?? [];
-        setLowStock(items.filter((p) => parseFloat(p.available_stock ?? '0') <= parseFloat(p.reorder_level ?? '0')).slice(0, 5));
+        const items = await DashboardApi.getLowStockProducts(5);
+        setLowStock(items);
       } catch {
         setLowStock([]);
       }

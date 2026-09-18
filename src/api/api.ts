@@ -3,7 +3,7 @@ import { tokenStorage } from '../utils/tokenStorage';
 import type {
   LoginResponse, RefreshResponse, DashboardData, Product, ProductCreatePayload, ProductImage, ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse, Warehouse, SalesOrder, CreateOrderPayload,
   PurchaseOrder, Invoice, InvoicePayment, InvoiceSettings, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User, SalesReturn, PurchaseReturn,
-  DispatchNote, StockMovement, Batch,
+  DispatchNote, StockMovement, Batch, LowStockItem, SalesReportRow, SalesReportSummary, InventoryReportRow, PurchaseReportRow, PurchaseReportSummary,
 } from '../types';
 
 // Base URLs — from environment
@@ -113,8 +113,41 @@ export const DashboardApi = {
     const { data } = await imsClient.get<IMSResponse<DashboardData>>('/api/v1/reports/dashboard/');
     return data.data;
   },
+  getLowStockProducts: async (limit = 5): Promise<LowStockItem[]> => {
+    const { data } = await imsClient.get<IMSResponse<any>>(
+      `/api/v1/reports/inventory/?low_stock=true&page_size=${limit}`
+    );
+    return data.data?.results ?? [];
+  },
 };
 
+
+// REPORTS — /api/v1/reports/
+export const ReportApi = {
+  getSalesReport: async (params?: {
+    date_from?: string; date_to?: string;
+    warehouse?: number; page?: number;
+  }): Promise<{ results: SalesReportRow[]; summary: SalesReportSummary; count: number }> => {
+    const { data } = await imsClient.get<IMSResponse<any>>('/api/v1/reports/sales/', { params });
+    return data.data;
+  },
+
+  getInventoryReport: async (params?: {
+    warehouse?: number; category?: number;
+    low_stock?: boolean; page?: number;
+  }): Promise<{ results: InventoryReportRow[]; total_stock_value: string; count: number }> => {
+    const { data } = await imsClient.get<IMSResponse<any>>('/api/v1/reports/inventory/', { params });
+    return { ...data.data, total_stock_value: data.data.total_stock_value ?? '0' };
+  },
+
+  getPurchaseReport: async (params?: {
+    date_from?: string; date_to?: string;
+    supplier?: number; page?: number;
+  }): Promise<{ results: PurchaseReportRow[]; summary: PurchaseReportSummary; count: number }> => {
+    const { data } = await imsClient.get<IMSResponse<any>>('/api/v1/reports/purchase/', { params });
+    return data.data;
+  },
+};
 
 // PRODUCT — /api/v1/products/
 export const ProductApi = {
@@ -173,6 +206,16 @@ export const ProductApi = {
   getStockMovements: async (productId: number, page = 1): Promise<PaginatedResponse<StockMovement>> => {
     const { data } = await imsClient.get('/api/v1/stock-movements/', {
       params: { product: productId, ordering: '-created_at', page, page_size: 20 },
+    });
+    return data;
+  },
+
+  getAllStockMovements: async (params?: {
+    movement_type?: string; warehouse?: number;
+    search?: string; page?: number;
+  }): Promise<PaginatedResponse<StockMovement>> => {
+    const { data } = await imsClient.get('/api/v1/stock-movements/', {
+      params: { ordering: '-created_at', page_size: 25, ...params },
     });
     return data;
   },

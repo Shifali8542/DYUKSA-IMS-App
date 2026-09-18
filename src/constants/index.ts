@@ -120,3 +120,45 @@ export const DISPOSITION_ICON: Record<string, string> = {
   damaged:    '💥',
   scrap:      '🗑️',
 };
+
+export const MOVEMENT_TYPE_ICON: Record<string, string> = {
+  receipt:        '📥',
+  adjustment_in:  '➕',
+  return:         '🔄',
+  transfer_in:    '📦',
+  dispatch:       '🚚',
+  delivery:       '✅',
+  adjustment_out: '➖',
+  reservation:    '🔒',
+  release:        '🔓',
+  damage:         '💥',
+  transfer_out:   '📤',
+};
+
+export const MOVEMENT_TYPE_COLOR: Record<string, { bg: string; text: string }> = {
+  receipt:        { bg: '#ECFDF5', text: '#10B981' },
+  adjustment_in:  { bg: '#ECFDF5', text: '#10B981' },
+  return:         { bg: '#EFF6FF', text: '#3B82F6' },
+  transfer_in:    { bg: '#EFF6FF', text: '#3B82F6' },
+  dispatch:       { bg: '#FFFBEB', text: '#F59E0B' },
+  delivery:       { bg: '#FFFBEB', text: '#F59E0B' },
+  adjustment_out: { bg: '#FEE2E2', text: '#DC2626' },
+  reservation:    { bg: '#F5F3FF', text: '#6366F1' },
+  release:        { bg: '#F5F3FF', text: '#6366F1' },
+  damage:         { bg: '#FEE2E2', text: '#DC2626' },
+  transfer_out:   { bg: '#FEE2E2', text: '#DC2626' },
+};
+
+export const MOVEMENT_TYPE_LABEL: Record<string, string> = {
+  receipt:        'Receipt',
+  adjustment_in:  'Adjustment In',
+  adjustment_out: 'Adjustment Out',
+  reservation:    'Reservation',
+  release:        'Release',
+  dispatch:       'Dispatch',
+  delivery:       'Delivery',
+  return:         'Return',
+  damage:         'Damage',
+  transfer_out:   'Transfer Out',
+  transfer_in:    'Transfer In',
+};
