@@ -495,8 +495,10 @@ export type MainStackParamList = {
   PurchaseReturnForm: { poId: number; supplierId: number; warehouseId: number };
   Reports: undefined;
   StockMovements: undefined;
+  WarehouseTransfers: undefined;
+  WarehouseTransferDetail: { transferId: number };
+  WarehouseTransferForm: undefined;
 };
-
 // ── Invoices 
 export type InvoiceStatus = 'draft' | 'finalized' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled';
 
@@ -705,6 +707,34 @@ export interface PurchaseReturn {
   created_at: string;
   updated_at: string;
   created_by: number | null;
+}
+
+// ── Warehouse Transfers
+export interface WarehouseTransferItem {
+  id: number;
+  transfer: number;
+  product: number;
+  product_name: string;
+  product_sku: string;
+  quantity: string;
+}
+
+export interface WarehouseTransfer {
+  id: number;
+  number: string;
+  organisation: number;
+  source_warehouse: number;
+  source_warehouse_name: string;
+  destination_warehouse: number;
+  destination_warehouse_name: string;
+  status: 'draft' | 'completed' | 'cancelled';
+  status_display: string;
+  notes: string;
+  completed_at: string | null;
+  cancelled_reason: string;
+  items: WarehouseTransferItem[];
+  created_at: string;
+  updated_at: string;
 }
 
 // ── Reports

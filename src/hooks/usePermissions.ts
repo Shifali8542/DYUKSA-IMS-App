@@ -52,6 +52,7 @@ export interface Permissions {
   role: ImsRole | null;
   isAdmin: boolean;
   isManagement: boolean;
+  canManageTransfers: boolean;
   // Catalogue
   canCreateProducts: boolean;
   canEditProducts: boolean;
@@ -86,39 +87,40 @@ export function usePermissions(): Permissions {
       if (token) {
         setRole(normaliseRole(getImsRole(token)));
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   return useMemo<Permissions>(() => {
     const r = role ?? 'employee';
     return {
       role,
-      isAdmin:            ADMIN.has(r),
-      isManagement:       MANAGEMENT.has(r),
+      isAdmin: ADMIN.has(r),
+      isManagement: MANAGEMENT.has(r),
       // Catalogue
-      canCreateProducts:  CAN_MANAGE_CATALOGUE.has(r),
-      canEditProducts:    CAN_MANAGE_CATALOGUE.has(r),
-      canDeleteProducts:  ADMIN.has(r),
+      canCreateProducts: CAN_MANAGE_CATALOGUE.has(r),
+      canEditProducts: CAN_MANAGE_CATALOGUE.has(r),
+      canDeleteProducts: ADMIN.has(r),
       // Inventory
-      canAdjustStock:     CAN_ADJUST_STOCK.has(r),
-      canViewInventory:   true, // all roles
+      canAdjustStock: CAN_ADJUST_STOCK.has(r),
+      canViewInventory: true, // all roles
       // Orders
-      canCreateOrders:    CAN_MANAGE_ORDERS.has(r),
-      canConfirmOrders:   CAN_MANAGE_ORDERS.has(r),
-      canCancelOrders:    CAN_MANAGE_ORDERS.has(r),
+      canCreateOrders: CAN_MANAGE_ORDERS.has(r),
+      canConfirmOrders: CAN_MANAGE_ORDERS.has(r),
+      canCancelOrders: CAN_MANAGE_ORDERS.has(r),
       // Customers
       canCreateCustomers: CAN_MANAGE_CUSTOMERS.has(r),
-      canEditCustomers:   CAN_MANAGE_CUSTOMERS.has(r),
+      canEditCustomers: CAN_MANAGE_CUSTOMERS.has(r),
       // Purchasing
       canManagePurchasing: CAN_MANAGE_PURCHASING.has(r),
       // Dispatch
-      canManageDispatch:  CAN_MANAGE_DISPATCH.has(r),
+      canManageDispatch: CAN_MANAGE_DISPATCH.has(r),
       // Finance & Reports
-      canManageFinance:   CAN_MANAGE_FINANCE.has(r),
-      canViewReports:     CAN_VIEW_REPORTS.has(r),
+      canManageFinance: CAN_MANAGE_FINANCE.has(r),
+      canViewReports: CAN_VIEW_REPORTS.has(r),
       // Admin
-      canManageUsers:     ADMIN.has(r),
-      canManageSettings:  ADMIN.has(r),
+      canManageTransfers: MANAGEMENT.has(r),
+      canManageUsers: ADMIN.has(r),
+      canManageSettings: ADMIN.has(r),
     };
   }, [role]);
 }

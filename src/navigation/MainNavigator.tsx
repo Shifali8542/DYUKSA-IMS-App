@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated, Dimensions, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Dimensions, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,6 +42,9 @@ import PurchaseReturnDetailScreen from '../screens/PurchaseReturnDetail/Purchase
 import PurchaseReturnFormScreen from '../screens/PurchaseReturnForm/PurchaseReturnForm';
 import ReportsScreen from '../screens/Reports/Reports';
 import StockMovementsScreen from '../screens/StockMovements/StockMovements';
+import WarehouseTransfersScreen from '../screens/WarehouseTransfers/WarehouseTransfers';
+import WarehouseTransferDetailScreen from '../screens/WarehouseTransfers/WarehouseTransferDetail';
+import WarehouseTransferFormScreen from '../screens/WarehouseTransfers/WarehouseTransferForm';
 
 
 const DRAWER_WIDTH = 280;
@@ -96,6 +99,7 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
     { label: 'Purchase Returns', icon: '📤', onPress: () => navigateTo('PurchaseReturns') },
     { label: 'Reports', icon: '📊', onPress: () => navigateTo('Reports') },
     { label: 'Stock Movements', icon: '📋', onPress: () => navigateTo('StockMovements') },
+    { label: 'Warehouse Transfers', icon: '🔄', onPress: () => navigateTo('WarehouseTransfers') },
   ];
 
   return (
@@ -116,7 +120,11 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
       </View>
 
       {/* Menu Items */}
-      <View style={{ marginTop: spacing.sm }}>
+            <ScrollView
+        style={{ flex: 1, marginTop: spacing.sm }}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         {menuItems.map((item) => (
           <TouchableOpacity
             key={item.label}
@@ -129,19 +137,19 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
 
-      {/* Divider + Logout */}
-      <View style={[s.divider, { borderTopColor: colors.border, marginTop: spacing.lg }]} />
-      <TouchableOpacity
-        onPress={() => { closeDrawer(); onLogout(); }}
-        style={[s.menuItem, { paddingVertical: spacing.md, paddingHorizontal: spacing.lg }]}
-      >
-        <Text style={{ fontSize: 20, marginRight: spacing.base, width: 28 }}>🚪</Text>
-        <Text style={{ color: colors.danger, fontSize: fontSize.base, fontWeight: fontWeight.semibold }}>
-          Sign Out
-        </Text>
-      </TouchableOpacity>
+        {/* Divider + Logout */}
+        <View style={[s.divider, { borderTopColor: colors.border, marginTop: spacing.lg }]} />
+        <TouchableOpacity
+          onPress={() => { closeDrawer(); onLogout(); }}
+          style={[s.menuItem, { paddingVertical: spacing.md, paddingHorizontal: spacing.lg, marginBottom: spacing.xl }]}
+        >
+          <Text style={{ fontSize: 20, marginRight: spacing.base, width: 28 }}>🚪</Text>
+          <Text style={{ color: colors.danger, fontSize: fontSize.base, fontWeight: fontWeight.semibold }}>
+            Sign Out
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
@@ -326,6 +334,13 @@ function MainStack({ onLogout }: Props) {
       </Stack.Screen>
       <Stack.Screen name="Reports" component={ReportsScreen} options={{ headerShown: true, title: 'Reports' }} />
       <Stack.Screen name="StockMovements" component={StockMovementsScreen} options={{ headerShown: true, title: 'Stock Movements' }} />
+      <Stack.Screen name="WarehouseTransfers" component={WarehouseTransfersScreen} options={{ headerShown: true, title: 'Warehouse Transfers' }} />
+      <Stack.Screen name="WarehouseTransferDetail" options={{ headerShown: true, title: 'Transfer Detail' }}>
+        {(props: any) => <WarehouseTransferDetailScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="WarehouseTransferForm" options={{ headerShown: true, title: 'New Transfer' }}>
+        {(props: any) => <WarehouseTransferFormScreen {...props} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }

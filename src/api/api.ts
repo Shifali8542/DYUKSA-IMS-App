@@ -3,7 +3,7 @@ import { tokenStorage } from '../utils/tokenStorage';
 import type {
   LoginResponse, RefreshResponse, DashboardData, Product, ProductCreatePayload, ProductImage, ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse, Warehouse, SalesOrder, CreateOrderPayload,
   PurchaseOrder, Invoice, InvoicePayment, InvoiceSettings, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User, SalesReturn, PurchaseReturn,
-  DispatchNote, StockMovement, Batch, LowStockItem, SalesReportRow, SalesReportSummary, InventoryReportRow, PurchaseReportRow, PurchaseReportSummary,
+  DispatchNote, StockMovement, Batch, LowStockItem, SalesReportRow, SalesReportSummary, InventoryReportRow, PurchaseReportRow, PurchaseReportSummary, WarehouseTransfer,
 } from '../types';
 
 // Base URLs — from environment
@@ -447,6 +447,41 @@ export const WarehouseApi = {
   },
 };
 
+
+// WAREHOUSE TRANSFERS — /api/v1/warehouse-transfers/
+export const WarehouseTransferApi = {
+  list: async (params?: {
+    status?: string; search?: string; page?: number;
+  }): Promise<PaginatedResponse<WarehouseTransfer>> => {
+    const { data } = await imsClient.get('/api/v1/warehouse-transfers/', { params });
+    return data;
+  },
+
+  get: async (id: number): Promise<WarehouseTransfer> => {
+    const { data } = await imsClient.get(`/api/v1/warehouse-transfers/${id}/`);
+    return data.data ?? data;
+  },
+
+  create: async (payload: {
+    source_warehouse: number;
+    destination_warehouse: number;
+    notes?: string;
+    items: { product: number; quantity: string }[];
+  }): Promise<WarehouseTransfer> => {
+    const { data } = await imsClient.post('/api/v1/warehouse-transfers/', payload);
+    return data.data ?? data;
+  },
+
+  complete: async (id: number): Promise<WarehouseTransfer> => {
+    const { data } = await imsClient.post(`/api/v1/warehouse-transfers/${id}/complete/`);
+    return data.data ?? data;
+  },
+
+  cancel: async (id: number, reason?: string): Promise<WarehouseTransfer> => {
+    const { data } = await imsClient.post(`/api/v1/warehouse-transfers/${id}/cancel/`, { reason });
+    return data.data ?? data;
+  },
+};
 
 // ORDERS — /api/v1/orders/
 export const OrderApi = {
