@@ -6,7 +6,6 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useWarehouseTransferDetail } from './hooks/useWarehouseTransferDetail';
 import { usePermissions } from '../../hooks/usePermissions';
 import { TRANSFER_STATUS_LABEL } from '../../constants';
-import Badge, { statusVariant } from '../../components/Badge/Badge';
 import Loader from '../../components/Loader/Loader';
 import ErrorState from '../../components/ErrorState/ErrorState';
 import Card from '../../components/Card/Card';

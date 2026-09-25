@@ -26,7 +26,7 @@ export default function OrdersScreen() {
   const nav = useNavigation<Nav>();
   const {
     tab, changeTab, search, setSearch, status, setStatus,
-    salesOrders, poOrders, loading, refreshing, error, refresh, data,
+    loading, refreshing, error, refresh, data,
   } = useOrders();
 
 

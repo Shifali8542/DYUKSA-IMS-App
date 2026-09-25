@@ -4,7 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OrderApi } from '../../../api/api';
 import { parseBackendError } from '../../../utils/parseError';
-import { ORDER_STATUS_LABEL } from '../../../constants';
 import type { SalesOrder, MainStackParamList } from '../../../types';
 
 

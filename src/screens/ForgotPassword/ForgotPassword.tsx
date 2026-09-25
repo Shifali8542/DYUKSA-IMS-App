@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { styles } from './ForgotPassword.styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';

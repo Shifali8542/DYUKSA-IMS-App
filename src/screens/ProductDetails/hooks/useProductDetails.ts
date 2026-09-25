@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ProductApi, ProductImageApi } from '../../../api/api';
 import { parseBackendError } from '../../../utils/parseError';
-import type { Product, ProductImage, ProductStockResponse, StockMovement, Batch } from '../../../types';
+import type { Product, ProductImage, ProductStockResponse, StockMovement } from '../../../types';
 
 export function useProductDetails(productId: number) {
   const [product, setProduct] = useState<Product | null>(null);

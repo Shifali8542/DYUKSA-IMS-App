@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated, Dimensions, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,15 +64,14 @@ const TAB_ICONS: Record<string, string> = {
 
 interface Props { onLogout: () => void; }
 
-// ═══════════════════════════════════════════════════════════════════════════
+
 // CUSTOM DRAWER — uses useNavigation from React Navigation
-// ═══════════════════════════════════════════════════════════════════════════
 
 function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onLogout: () => void }) {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { canCreateCustomers, canManagePurchasing } = usePermissions();
+  const { canManagePurchasing } = usePermissions();
 
   function navigateTo(screen: string, params?: Record<string, any>) {
     closeDrawer();

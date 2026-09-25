@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Share } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { styles } from './ProductDetails.styles';
 import {
   SafeAreaView
@@ -17,7 +17,7 @@ import ErrorState from '../../components/ErrorState/ErrorState';
 import Badge from '../../components/Badge/Badge';
 import Card from '../../components/Card/Card';
 import type { MainStackParamList } from '../../types';
-import { DISPOSITION_LABEL, DISPOSITION_ICON, MOVEMENT_TYPE_ICON, MOVEMENT_TYPE_COLOR, MOVEMENT_TYPE_LABEL } from '../../constants';
+import { MOVEMENT_TYPE_ICON, MOVEMENT_TYPE_COLOR, MOVEMENT_TYPE_LABEL } from '../../constants';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'ProductDetails'>;
 
@@ -35,7 +35,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const { product, stockLevels, images, movements, movementsLoading, batches, loading, error, refresh } = useProductDetails(productId);
   const adjust = useStockAdjust(productId);
-  const [deleting, setDeleting] = useState(false);
+  const [, setDeleting] = useState(false);
 
   function handleDelete() {
     Alert.alert(
@@ -229,7 +229,7 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
                 <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>No batches recorded yet</Text>
               </View>
             ) : (
-              batches.map((batch: any, idx: number) => {
+              batches.map((batch: any) => {
                 const isExpired = batch.is_expired;
                 const daysLeft = batch.days_until_expiry;
                 const isNearExpiry = daysLeft !== null && daysLeft <= 30 && daysLeft > 0;

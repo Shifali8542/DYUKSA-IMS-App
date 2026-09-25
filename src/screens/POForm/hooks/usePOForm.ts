@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { OrderApi, CustomerApi, WarehouseApi, ProductApi } from '../../../api/api';
+import { OrderApi, WarehouseApi, ProductApi } from '../../../api/api';
 import { todayStr } from '../../../utils/formUtils';
 import { parseBackendError } from '../../../utils/parseError';
 import type { Warehouse, Product, Supplier } from '../../../types';

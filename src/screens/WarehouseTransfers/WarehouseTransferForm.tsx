@@ -9,7 +9,7 @@ import Button from '../../components/Button/Button';
 import Card from '../../components/Card/Card';
 import Loader from '../../components/Loader/Loader';
 import SearchBar from '../../components/SearchBar/SearchBar';
-import type { MainStackParamList, Warehouse, Product } from '../../types';
+import type { MainStackParamList, Warehouse } from '../../types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WarehouseTransferForm'>;
 

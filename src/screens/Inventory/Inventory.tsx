@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, Share } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { tokenStorage } from '../../utils/tokenStorage';
 import { imsClient } from '../../api/api';
 import { styles } from './Inventory.styles';

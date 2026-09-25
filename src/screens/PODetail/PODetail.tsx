@@ -10,13 +10,12 @@ import Loader from '../../components/Loader/Loader';
 import ErrorState from '../../components/ErrorState/ErrorState';
 import Badge, { statusVariant } from '../../components/Badge/Badge';
 import Card from '../../components/Card/Card';
-import Button from '../../components/Button/Button';
 import { PO_STATUS_LABEL } from '../../constants';
 import type { MainStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PODetail'>;
 
-export default function PODetailScreen({ route, navigation }: Props) {
+export default function PODetailScreen({ route }: Props) {
   const poId = route.params.poId;
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const { canManagePurchasing } = usePermissions();
@@ -193,7 +192,7 @@ export default function PODetailScreen({ route, navigation }: Props) {
                   borderRadius: borderRadius.md,
                   backgroundColor: action.variant === 'success' ? colors.success
                     : action.variant === 'danger' ? colors.danger
-                    : colors.primary,
+                      : colors.primary,
                   opacity: transitioning ? 0.5 : 1,
                 }}
               >
@@ -240,7 +239,7 @@ export default function PODetailScreen({ route, navigation }: Props) {
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
-  const { colors, fontSize, fontWeight, spacing } = useTheme();
+  const { colors, fontSize, fontWeight } = useTheme();
   return (
     <View style={{ flexDirection: 'row', paddingVertical: 2 }}>
       <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, width: 90 }}>{label}</Text>

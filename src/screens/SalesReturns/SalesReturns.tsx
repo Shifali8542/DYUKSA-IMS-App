@@ -10,7 +10,7 @@ import SearchBar from '../../components/SearchBar/SearchBar';
 import Loader from '../../components/Loader/Loader';
 import EmptyState from '../../components/EmptyState/EmptyState';
 import ErrorState from '../../components/ErrorState/ErrorState';
-import { RETURN_STATUS_LABEL, DISPOSITION_ICON } from '../../constants';
+import { RETURN_STATUS_LABEL } from '../../constants';
 import type { SalesReturn, MainStackParamList } from '../../types';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;

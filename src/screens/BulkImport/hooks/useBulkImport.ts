@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Alert, Linking, Platform } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { imsClient } from '../../../api/api';
 import { tokenStorage } from '../../../utils/tokenStorage';
-import { parseBackendError } from '../../../utils/parseError';
 
 export interface ImportResult {
   dry_run: boolean;

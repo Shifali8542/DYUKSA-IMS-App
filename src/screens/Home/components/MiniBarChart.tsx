@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function MiniBarChart({ bars, height = 100, barWidth = 28, showValues = true }: Props) {
-  const { colors, fontSize, fontWeight, spacing, borderRadius } = useTheme();
+  const { colors, fontWeight, borderRadius } = useTheme();
   const maxVal = Math.max(...bars.map((b) => b.value), 1);
 
   return (

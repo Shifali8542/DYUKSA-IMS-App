@@ -5,6 +5,7 @@ import OnboardingScreen from '../screens/Onboarding/Onboarding';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 import { STORAGE_KEYS } from '../constants';
+import { setOnSessionExpired } from '../api/api';
 
 export default function AppNavigator() {
   const [state, setState] = useState<'loading' | 'onboarding' | 'login' | 'main'>('loading');
@@ -28,6 +29,10 @@ export default function AppNavigator() {
     }, 2000);
 
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    setOnSessionExpired(() => setState('login'));
   }, []);
 
   if (state === 'loading') {

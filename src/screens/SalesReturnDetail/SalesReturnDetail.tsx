@@ -82,7 +82,7 @@ export default function SalesReturnDetailScreen({ route }: Props) {
           <Text style={{ color: colors.textPrimary, fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: spacing.base }}>
             Return Items
           </Text>
-          {sr.items.map((item, idx) => (
+          {sr.items.map((item) => (
             <View
               key={item.id}
               style={{

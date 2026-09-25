@@ -25,6 +25,10 @@ export const imsClient = axios.create({
   timeout: 15000,
 });
 
+// ── Session expiry: lets the app go back to Login when the session can't be refreshed
+let onSessionExpired: () => void = () => {};
+export function setOnSessionExpired(fn: () => void) { onSessionExpired = fn; }
+
 // ── Request interceptor: attach Bearer token 
 imsClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const token = await tokenStorage.getAccessToken();
@@ -57,7 +61,7 @@ imsClient.interceptors.response.use(
     const orig = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
     if (error.response?.status === 401 && orig && !orig._retry) {
       const refresh = await tokenStorage.getRefreshToken();
-      if (!refresh) { await tokenStorage.clear(); return Promise.reject(error); }
+      if (!refresh) { await tokenStorage.clear(); onSessionExpired(); return Promise.reject(error); }
       orig._retry = true;
       if (isRefreshing) {
         return new Promise((res, rej) => {
@@ -73,7 +77,7 @@ imsClient.interceptors.response.use(
         resolveQueue(data.access);
         orig.headers.Authorization = `Bearer ${data.access}`;
         return imsClient(orig);
-      } catch (e) { resolveQueue(null); await tokenStorage.clear(); return Promise.reject(e); }
+      } catch (e) { resolveQueue(null); await tokenStorage.clear(); onSessionExpired(); return Promise.reject(e); }
       finally { isRefreshing = false; }
     }
     return Promise.reject(error);

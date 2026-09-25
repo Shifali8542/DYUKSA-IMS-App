@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { OrderApi } from '../../../api/api';
 import { parseBackendError } from '../../../utils/parseError';

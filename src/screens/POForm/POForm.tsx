@@ -11,7 +11,7 @@ import Button from '../../components/Button/Button';
 import Loader from '../../components/Loader/Loader';
 import Card from '../../components/Card/Card';
 import SearchBar from '../../components/SearchBar/SearchBar';
-import type { MainStackParamList, Product, Supplier, Warehouse } from '../../types';
+import type { MainStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'POForm'>;
 

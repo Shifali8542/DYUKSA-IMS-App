@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { PurchaseReturnApi, OrderApi } from '../../../api/api';
+import { PurchaseReturnApi } from '../../../api/api';
 import { parseBackendError } from '../../../utils/parseError';
 import { todayStr, nextLineKey } from '../../../utils/formUtils';
 import type { ReturnLineItem } from '../../../utils/formUtils';
