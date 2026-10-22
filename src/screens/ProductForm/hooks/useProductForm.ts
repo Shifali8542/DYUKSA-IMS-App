@@ -357,7 +357,7 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
   }
 
   return {
-    form, setField, errors,
+    form, setField, errors, setErrors,
     categories, brands, units, suppliers,
     loading, saving, saved, isEdit,
     showBarcodeScanner, setShowBarcodeScanner, onBarcodeScan,

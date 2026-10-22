@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, Switch, Alert, TouchableOpacity, Image, Modal, FlatList, Pressable,  Vibration } from 'react-native';
+import { View, Text, ScrollView, Switch, Alert, TouchableOpacity, Image, Modal, FlatList, Pressable, Vibration, KeyboardAvoidingView, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { styles } from './ProductForm.styles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
 import { useProductForm } from './hooks/useProductForm';
@@ -16,15 +16,19 @@ import type { MainStackParamList, Supplier } from '../../types';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'ProductForm'>;
 
+const STEP_TITLES = ['Photo & Barcode', 'Basic Information', 'Classification', 'Pricing & Tax', 'Weight & Dimensions', 'Preferred Vendor'];
+
 export default function ProductFormScreen({ route, navigation }: Props) {
   const productId = route.params?.productId;
   const prefillBarcode = (route.params as any)?.barcode;
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
+  console.log('[ProductForm] bottom inset:', insets.bottom);
   const [camPermission, requestCamPermission] = useCameraPermissions();
 
   const {
-    form, setField, errors,
+    form, setField, errors, setErrors,
     categories, brands, units, suppliers,
     loading, saving, saved, isEdit,
     showBarcodeScanner, setShowBarcodeScanner, onBarcodeScan,
@@ -35,6 +39,11 @@ export default function ProductFormScreen({ route, navigation }: Props) {
 
   const [showVendorPicker, setShowVendorPicker] = useState(false);
   const [vendorSearch, setVendorSearch] = useState('');
+  const [step, setStep] = useState(0);
+  const [photoError, setPhotoError] = useState(false);
+  const wizard = !isEdit;
+  const LAST_STEP = STEP_TITLES.length - 1;
+  const show = (n: number) => !wizard || step === n;
 
   useEffect(() => {
     navigation.setOptions({ title: isEdit ? 'Edit Product' : 'Add Product' });
@@ -48,7 +57,47 @@ export default function ProductFormScreen({ route, navigation }: Props) {
     }
   }, [saved]);
 
+  function stepErrors(s: number) {
+    const e: Record<string, string> = {};
+    if (s === 1) {
+      if (!form.name.trim()) e.name = 'Please enter the product name';
+      if (!form.sku.trim()) e.sku = 'Please enter a SKU';
+    }
+    if (s === 2) {
+      if (!form.category) e.category = 'Please select a category';
+      if (!form.unit) e.unit = 'Please select a unit';
+    }
+    if (s === 3) {
+      if (!form.cost_price.trim() || isNaN(Number(form.cost_price)) || Number(form.cost_price) < 0) e.cost_price = 'Enter a valid cost price';
+      if (!form.selling_price.trim() || isNaN(Number(form.selling_price)) || Number(form.selling_price) < 0) e.selling_price = 'Enter a valid selling price';
+    }
+    return e;
+  }
+
+  function goNext() {
+    if (step === 0 && form.image_uris.length === 0) { setPhotoError(true); return; }
+    const e = stepErrors(step);
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setStep(step + 1);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }
+
+  async function openScanner() {
+    if (!camPermission?.granted) {
+      const res = await requestCamPermission();
+      if (!res.granted) return;
+    }
+    setShowBarcodeScanner(true);
+  }
+
   async function onSubmit() {
+    if (wizard) {
+      if (form.image_uris.length === 0) { setStep(0); setPhotoError(true); return; }
+      for (let s = 1; s <= 3; s++) {
+        const e = stepErrors(s);
+        if (Object.keys(e).length) { setErrors(e); setStep(s); return; }
+      }
+    }
     const ok = await handleSave();
     if (!ok && !saved) scrollRef.current?.scrollTo({ y: 0, animated: true });
   }
@@ -79,364 +128,445 @@ export default function ProductFormScreen({ route, navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={{ padding: spacing.base, paddingBottom: 120 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── Product Image ── */}
-        <Card style={{ marginBottom: spacing.base }}>
-          <Text style={[{ fontWeight: '600', fontSize: fontSize.sm, marginBottom: spacing.sm }]}>
-            Product Images ({form.image_uris.length}/8)
-          </Text>
-
-          {/* Image grid */}
-          {form.image_uris.length > 0 && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: spacing.sm }}>
-              {form.image_uris.map((uri, index) => (
-                <View key={index} style={{ position: 'relative' }}>
-                  <Image
-                    source={{ uri }}
-                    style={{ width: 90, height: 90, borderRadius: 8, borderWidth: 0.5, borderColor: '#e2e8f0' }}
-                    resizeMode="cover"
-                  />
-                  {index === 0 && (
-                    <View style={{
-                      position: 'absolute', top: 4, left: 4,
-                      backgroundColor: colors.primary, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1,
-                    }}>
-                      <Text style={{ color: '#fff', fontSize: 9, fontWeight: '600' }}>PRIMARY</Text>
-                    </View>
-                  )}
-                  {/* Crop button */}
-                  {uri.startsWith('file://') && (
-                    <TouchableOpacity
-                      onPress={() => cropImage(index)}
-                      style={{
-                        position: 'absolute', bottom: 4, left: 4,
-                        backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 10,
-                        paddingHorizontal: 6, paddingVertical: 2,
-                      }}
-                    >
-                      <Text style={{ color: '#fff', fontSize: 9 }}>Crop</Text>
-                    </TouchableOpacity>
-                  )}
-                  {/* Remove button */}
-                  <TouchableOpacity
-                    onPress={() => removeImage(index)}
-                    style={{
-                      position: 'absolute', top: -6, right: -6,
-                      width: 22, height: 22, borderRadius: 11,
-                      backgroundColor: colors.danger,
-                      alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>×</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Add more button */}
-          {form.image_uris.length < 8 && (
-            <TouchableOpacity
-              onPress={() => Alert.alert('Add Image', 'Choose source', [
-                { text: 'Camera', onPress: takePhoto },
-                { text: 'Gallery', onPress: pickImage },
-                { text: 'Cancel', style: 'cancel' },
-              ])}
-              style={{
-                borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#cbd5e1',
-                borderRadius: 8, padding: 16, alignItems: 'center',
-                backgroundColor: '#f8fafc',
-              }}
-            >
-              <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary }}>
-                + Add {form.image_uris.length === 0 ? 'Images' : 'More Images'}
+    <SafeAreaView edges={['left', 'right']} style={[styles.safe, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={{ padding: spacing.base, paddingBottom: 120 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {wizard && (
+            <View style={{ marginBottom: spacing.base }}>
+              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginBottom: 6 }}>
+                Step {step + 1} of {LAST_STEP + 1} · {STEP_TITLES[step]}
               </Text>
-              <Text style={{ fontSize: fontSize.xs, color: '#94a3b8', marginTop: 2 }}>
-                JPEG, PNG, WebP — max 8 images, 5 MB each
-              </Text>
-            </TouchableOpacity>
-          )}
-        </Card>
-
-        {/* ── Basic Information ── */}
-        <Card style={{ marginBottom: spacing.base }}>
-          <SectionHeader icon="📋" title="Basic Information" />
-
-          <Input
-            label="Product Name *"
-            value={form.name}
-            onChangeText={(v) => setField('name', v)}
-            placeholder="e.g. Wireless Mouse"
-            error={errors.name}
-          />
-
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Input
-                label="SKU *"
-                value={form.sku}
-                onChangeText={(v) => setField('sku', v)}
-                placeholder="e.g. WM-001"
-                autoCapitalize="characters"
-                error={errors.sku}
-              />
-            </View>
-            <View style={styles.half}>
-              <Input
-                label="Barcode"
-                value={form.barcode}
-                onChangeText={(v) => setField('barcode', v)}
-                placeholder="Scan or type"
-              />
-              <TouchableOpacity
-                onPress={async () => {
-                  if (!camPermission?.granted) {
-                    const res = await requestCamPermission();
-                    if (!res.granted) return;
-                  }
-                  setShowBarcodeScanner(true);
-                }}
-                style={{
-                  backgroundColor: colors.primary, borderRadius: borderRadius.md,
-                  paddingVertical: 8, alignItems: 'center', marginTop: 4,
-                }}
-              >
-                <Text style={{ color: colors.textInverse, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
-                  📷 Scan Barcode
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <Input
-            label="HSN / SAC Code"
-            value={form.hsn_code}
-            onChangeText={(v) => setField('hsn_code', v)}
-            placeholder="e.g. 85176290 (for GST)"
-          />
-
-          <Input
-            label="Description"
-            value={form.description}
-            onChangeText={(v) => setField('description', v)}
-            placeholder="Product description"
-            multiline
-            numberOfLines={3}
-          />
-        </Card>
-
-        {/* ── Classification ── */}
-        <Card style={{ marginBottom: spacing.base }}>
-          <SectionHeader icon="🏷️" title="Classification" />
-
-          <InlineCreateField
-            label="Category" required
-            value={form.category} options={categories}
-            onSelect={(id) => setField('category', id)}
-            onCreate={createCategory} onDelete={deleteCategory}
-            error={errors.category} createLabel="New Category"
-          />
-
-          <InlineCreateField
-            label="Brand"
-            value={form.brand} options={brands}
-            onSelect={(id) => setField('brand', id)}
-            onCreate={createBrand} onDelete={deleteBrand}
-            createLabel="New Brand"
-          />
-
-          <InlineCreateField
-            label="Unit" required
-            value={form.unit}
-            options={units.map((u) => ({ id: u.id, name: `${u.name} (${u.symbol})` }))}
-            onSelect={(id) => setField('unit', id)}
-            onCreate={createUnit} onDelete={deleteUnit}
-            createLabel="New Unit"
-            extraField={{ placeholder: 'Symbol', label: 'Symbol' }}
-          />
-        </Card>
-
-        {/* ── Pricing & Tax ── */}
-        <Card style={{ marginBottom: spacing.base }}>
-          <SectionHeader icon="💰" title="Pricing & Tax" />
-
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Input
-                label="Cost Price *"
-                value={form.cost_price}
-                onChangeText={(v) => setField('cost_price', v)}
-                placeholder="0.00"
-                keyboardType="decimal-pad"
-                error={errors.cost_price}
-              />
-            </View>
-            <View style={styles.half}>
-              <Input
-                label="Selling Price *"
-                value={form.selling_price}
-                onChangeText={(v) => setField('selling_price', v)}
-                placeholder="0.00"
-                keyboardType="decimal-pad"
-                error={errors.selling_price}
-              />
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Input
-                label="Tax Rate %"
-                value={form.tax_rate}
-                onChangeText={(v) => setField('tax_rate', v)}
-                placeholder="0.00"
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View style={styles.half}>
-              <Input
-                label="Reorder Level"
-                value={form.reorder_level}
-                onChangeText={(v) => setField('reorder_level', v)}
-                placeholder="0"
-                keyboardType="decimal-pad"
-              />
-            </View>
-          </View>
-
-          {/* Margin indicator */}
-          {form.cost_price && form.selling_price && Number(form.cost_price) > 0 && (
-            <View style={{
-              backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
-              padding: spacing.sm, flexDirection: 'row', justifyContent: 'space-between',
-              marginTop: spacing.sm,
-            }}>
-              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>Profit Margin</Text>
-              <Text style={{
-                color: Number(form.selling_price) >= Number(form.cost_price) ? '#10B981' : '#EF4444',
-                fontSize: fontSize.xs, fontWeight: fontWeight.bold,
-              }}>
-                {(((Number(form.selling_price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1)}%
-              </Text>
-            </View>
-          )}
-        </Card>
-
-        {/* ── Weight & Dimensions ── */}
-        <Card style={{ marginBottom: spacing.base }}>
-          <SectionHeader icon="📐" title="Weight & Dimensions" />
-
-          <View style={styles.row}>
-            <View style={{ flex: 2 }}>
-              <Input
-                label="Weight"
-                value={form.weight}
-                onChangeText={(v) => setField('weight', v)}
-                placeholder="0.00"
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginBottom: 6 }}>
-                Unit
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 4 }}>
-                {['kg', 'g', 'lb'].map((wu) => (
-                  <TouchableOpacity
-                    key={wu}
-                    onPress={() => setField('weight_unit', wu)}
-                    style={{
-                      flex: 1, paddingVertical: 10, borderRadius: borderRadius.sm,
-                      backgroundColor: form.weight_unit === wu ? colors.primary : colors.surfaceSecondary,
-                      borderWidth: 1, borderColor: form.weight_unit === wu ? colors.primary : colors.border,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{
-                      color: form.weight_unit === wu ? colors.textInverse : colors.textSecondary,
-                      fontSize: fontSize.xs, fontWeight: fontWeight.semibold,
-                    }}>{wu}</Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.border }}>
+                <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.primary, width: `${((step + 1) / (LAST_STEP + 1)) * 100}%` }} />
               </View>
             </View>
-          </View>
-
-          <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginTop: spacing.sm, marginBottom: 6 }}>
-            Dimensions (cm)
-          </Text>
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Input label="Length" value={form.length} onChangeText={(v) => setField('length', v)} placeholder="L" keyboardType="decimal-pad" />
-            </View>
-            <View style={styles.half}>
-              <Input label="Width" value={form.width} onChangeText={(v) => setField('width', v)} placeholder="W" keyboardType="decimal-pad" />
-            </View>
-            <View style={styles.half}>
-              <Input label="Height" value={form.height} onChangeText={(v) => setField('height', v)} placeholder="H" keyboardType="decimal-pad" />
-            </View>
-          </View>
-        </Card>
-
-        {/* ── Preferred Vendor ── */}
-        <Card style={{ marginBottom: spacing.base }}>
-          <SectionHeader icon="🏢" title="Preferred Vendor" />
-
-          <TouchableOpacity
-            onPress={() => { setShowVendorPicker(true); setVendorSearch(''); }}
-            style={{
-              backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
-              borderWidth: 1, borderColor: colors.border, padding: 12,
-              flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: selectedVendor ? colors.textPrimary : colors.placeholder, fontSize: fontSize.base }}>
-              {selectedVendor ? `${selectedVendor.name} (${selectedVendor.code})` : 'Select preferred vendor...'}
-            </Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>▼</Text>
-          </TouchableOpacity>
-
-          {selectedVendor && (
-            <TouchableOpacity onPress={() => setField('preferred_vendor', null)} style={{ marginTop: spacing.xs }}>
-              <Text style={{ color: colors.danger, fontSize: fontSize.xs }}>Clear vendor</Text>
-            </TouchableOpacity>
           )}
-        </Card>
 
-        {/* ── Status ── */}
-        <Card style={{ marginBottom: spacing.xl }}>
-          <View style={styles.switchRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontSize: 16, marginRight: spacing.sm }}>
-                {form.is_active ? '🟢' : '🔴'}
+          {/* ── Product Image ── */}
+          {show(0) && (
+            <Card style={{ marginBottom: spacing.base }}>
+              <Text style={[{ fontWeight: '600', fontSize: fontSize.sm, marginBottom: spacing.sm }]}>
+                Product Images ({form.image_uris.length}/8){wizard ? ' *' : ''}
               </Text>
-              <Text style={{ color: colors.textPrimary, fontSize: fontSize.base, fontWeight: fontWeight.medium }}>
-                {form.is_active ? 'Active Product' : 'Inactive Product'}
+
+              {/* Image grid */}
+              {form.image_uris.length > 0 && (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: spacing.sm }}>
+                  {form.image_uris.map((uri, index) => (
+                    <View key={index} style={{ position: 'relative' }}>
+                      <Image
+                        source={{ uri }}
+                        style={{ width: 90, height: 90, borderRadius: 8, borderWidth: 0.5, borderColor: '#e2e8f0' }}
+                        resizeMode="cover"
+                      />
+                      {index === 0 && (
+                        <View style={{
+                          position: 'absolute', top: 4, left: 4,
+                          backgroundColor: colors.primary, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1,
+                        }}>
+                          <Text style={{ color: '#fff', fontSize: 9, fontWeight: '600' }}>PRIMARY</Text>
+                        </View>
+                      )}
+                      {/* Crop button */}
+                      {uri.startsWith('file://') && (
+                        <TouchableOpacity
+                          onPress={() => cropImage(index)}
+                          style={{
+                            position: 'absolute', bottom: 4, left: 4,
+                            backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 10,
+                            paddingHorizontal: 6, paddingVertical: 2,
+                          }}
+                        >
+                          <Text style={{ color: '#fff', fontSize: 9 }}>Crop</Text>
+                        </TouchableOpacity>
+                      )}
+                      {/* Remove button */}
+                      <TouchableOpacity
+                        onPress={() => removeImage(index)}
+                        style={{
+                          position: 'absolute', top: -6, right: -6,
+                          width: 22, height: 22, borderRadius: 11,
+                          backgroundColor: colors.danger,
+                          alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>×</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Add more button */}
+              {form.image_uris.length < 8 && (
+                <TouchableOpacity
+                  onPress={() => Alert.alert('Add Image', 'Choose source', [
+                    { text: 'Camera', onPress: takePhoto },
+                    { text: 'Gallery', onPress: pickImage },
+                    { text: 'Cancel', style: 'cancel' },
+                  ])}
+                  style={{
+                    borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#cbd5e1',
+                    borderRadius: 8, padding: 16, alignItems: 'center',
+                    backgroundColor: '#f8fafc',
+                  }}
+                >
+                  <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary }}>
+                    + Add {form.image_uris.length === 0 ? 'Images' : 'More Images'}
+                  </Text>
+                  <Text style={{ fontSize: fontSize.xs, color: '#94a3b8', marginTop: 2 }}>
+                    JPEG, PNG, WebP — max 8 images, 5 MB each
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {photoError && form.image_uris.length === 0 && (
+                <Text style={{ color: colors.danger, fontSize: fontSize.xs, marginTop: spacing.xs }}>
+                  Please add at least one photo of the product to continue.
+                </Text>
+              )}
+            </Card>
+          )}
+
+          {/* ── Barcode (new product, optional) ── */}
+          {wizard && step === 0 && (
+            <Card style={{ marginBottom: spacing.base }}>
+              <Text style={{ fontWeight: '600', fontSize: fontSize.sm, marginBottom: spacing.xs }}>Barcode (optional)</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginBottom: spacing.sm }}>
+                Scan the barcode if the product has one, or skip this.
               </Text>
-            </View>
-            <Switch
-              value={form.is_active}
-              onValueChange={(v) => setField('is_active', v)}
-              trackColor={{ true: colors.primary, false: colors.border }}
+              {!!form.barcode && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+                  <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{form.barcode}</Text>
+                  <TouchableOpacity onPress={() => setField('barcode', '')}>
+                    <Text style={{ color: colors.danger, fontSize: fontSize.xs }}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              <Button title={form.barcode ? 'Scan Again' : '📷 Scan Barcode'} variant="outline" onPress={openScanner} fullWidth />
+            </Card>
+          )}
+
+          {/* ── Basic Information ── */}
+          {show(1) && (
+            <Card style={{ marginBottom: spacing.base }}>
+              <SectionHeader icon="📋" title="Basic Information" />
+
+              <Input
+                label="Product Name *"
+                value={form.name}
+                onChangeText={(v) => setField('name', v)}
+                placeholder="e.g. Wireless Mouse"
+                error={errors.name}
+              />
+
+              <View style={styles.row}>
+                <View style={styles.half}>
+                  <Input
+                    label="SKU *"
+                    value={form.sku}
+                    onChangeText={(v) => setField('sku', v)}
+                    placeholder="e.g. WM-001"
+                    autoCapitalize="characters"
+                    error={errors.sku}
+                  />
+                </View>
+                {!wizard && (
+                  <View style={styles.half}>
+                    <Input
+                      label="Barcode"
+                      value={form.barcode}
+                      onChangeText={(v) => setField('barcode', v)}
+                      placeholder="Scan or type"
+                    />
+                    <TouchableOpacity
+                      onPress={async () => {
+                        if (!camPermission?.granted) {
+                          const res = await requestCamPermission();
+                          if (!res.granted) return;
+                        }
+                        setShowBarcodeScanner(true);
+                      }}
+                      style={{
+                        backgroundColor: colors.primary, borderRadius: borderRadius.md,
+                        paddingVertical: 8, alignItems: 'center', marginTop: 4,
+                      }}
+                    >
+                      <Text style={{ color: colors.textInverse, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>
+                        📷 Scan Barcode
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              <Input
+                label="HSN / SAC Code"
+                value={form.hsn_code}
+                onChangeText={(v) => setField('hsn_code', v)}
+                placeholder="e.g. 85176290 (for GST)"
+              />
+
+              <Input
+                label="Description"
+                value={form.description}
+                onChangeText={(v) => setField('description', v)}
+                placeholder="Product description"
+                multiline
+                numberOfLines={3}
+              />
+            </Card>
+          )}
+
+          {/* ── Classification ── */}
+          {show(2) && (
+            <Card style={{ marginBottom: spacing.base }}>
+              <SectionHeader icon="🏷️" title="Classification" />
+
+              <InlineCreateField
+                label="Category" required
+                value={form.category} options={categories}
+                onSelect={(id) => setField('category', id)}
+                onCreate={createCategory} onDelete={deleteCategory}
+                error={errors.category} createLabel="New Category"
+              />
+
+              <InlineCreateField
+                label="Brand"
+                value={form.brand} options={brands}
+                onSelect={(id) => setField('brand', id)}
+                onCreate={createBrand} onDelete={deleteBrand}
+                createLabel="New Brand"
+              />
+
+              <InlineCreateField
+                label="Unit" required
+                value={form.unit}
+                options={units.map((u) => ({ id: u.id, name: `${u.name} (${u.symbol})` }))}
+                onSelect={(id) => setField('unit', id)}
+                onCreate={createUnit} onDelete={deleteUnit}
+                createLabel="New Unit"
+                extraField={{ placeholder: 'Symbol', label: 'Symbol' }}
+              />
+            </Card>
+          )}
+
+          {/* ── Pricing & Tax ── */}
+          {show(3) && (
+            <Card style={{ marginBottom: spacing.base }}>
+              <SectionHeader icon="💰" title="Pricing & Tax" />
+
+              <View style={styles.row}>
+                <View style={styles.half}>
+                  <Input
+                    label="Cost Price *"
+                    value={form.cost_price}
+                    onChangeText={(v) => setField('cost_price', v)}
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                    error={errors.cost_price}
+                  />
+                </View>
+                <View style={styles.half}>
+                  <Input
+                    label="Selling Price *"
+                    value={form.selling_price}
+                    onChangeText={(v) => setField('selling_price', v)}
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                    error={errors.selling_price}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={styles.half}>
+                  <Input
+                    label="Tax Rate %"
+                    value={form.tax_rate}
+                    onChangeText={(v) => setField('tax_rate', v)}
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <View style={styles.half}>
+                  <Input
+                    label="Reorder Level"
+                    value={form.reorder_level}
+                    onChangeText={(v) => setField('reorder_level', v)}
+                    placeholder="0"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+
+              {/* Margin indicator */}
+              {form.cost_price && form.selling_price && Number(form.cost_price) > 0 && (
+                <View style={{
+                  backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
+                  padding: spacing.sm, flexDirection: 'row', justifyContent: 'space-between',
+                  marginTop: spacing.sm,
+                }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>Profit Margin</Text>
+                  <Text style={{
+                    color: Number(form.selling_price) >= Number(form.cost_price) ? '#10B981' : '#EF4444',
+                    fontSize: fontSize.xs, fontWeight: fontWeight.bold,
+                  }}>
+                    {(((Number(form.selling_price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1)}%
+                  </Text>
+                </View>
+              )}
+            </Card>
+          )}
+
+          {/* ── Weight & Dimensions ── */}
+          {show(4) && (
+            <Card style={{ marginBottom: spacing.base }}>
+              <SectionHeader icon="📐" title="Weight & Dimensions" />
+
+              <View style={styles.row}>
+                <View style={{ flex: 2 }}>
+                  <Input
+                    label="Weight"
+                    value={form.weight}
+                    onChangeText={(v) => setField('weight', v)}
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginBottom: 6 }}>
+                    Unit
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 4 }}>
+                    {['kg', 'g', 'lb'].map((wu) => (
+                      <TouchableOpacity
+                        key={wu}
+                        onPress={() => setField('weight_unit', wu)}
+                        style={{
+                          flex: 1, paddingVertical: 10, borderRadius: borderRadius.sm,
+                          backgroundColor: form.weight_unit === wu ? colors.primary : colors.surfaceSecondary,
+                          borderWidth: 1, borderColor: form.weight_unit === wu ? colors.primary : colors.border,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{
+                          color: form.weight_unit === wu ? colors.textInverse : colors.textSecondary,
+                          fontSize: fontSize.xs, fontWeight: fontWeight.semibold,
+                        }}>{wu}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginTop: spacing.sm, marginBottom: 6 }}>
+                Dimensions (cm)
+              </Text>
+              <View style={styles.row}>
+                <View style={styles.half}>
+                  <Input label="Length" value={form.length} onChangeText={(v) => setField('length', v)} placeholder="L" keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.half}>
+                  <Input label="Width" value={form.width} onChangeText={(v) => setField('width', v)} placeholder="W" keyboardType="decimal-pad" />
+                </View>
+                <View style={styles.half}>
+                  <Input label="Height" value={form.height} onChangeText={(v) => setField('height', v)} placeholder="H" keyboardType="decimal-pad" />
+                </View>
+              </View>
+            </Card>
+          )}
+
+          {/* ── Preferred Vendor ── */}
+          {show(5) && (
+            <Card style={{ marginBottom: spacing.base }}>
+              <SectionHeader icon="🏢" title="Preferred Vendor" />
+
+              <TouchableOpacity
+                onPress={() => { setShowVendorPicker(true); setVendorSearch(''); }}
+                style={{
+                  backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
+                  borderWidth: 1, borderColor: colors.border, padding: 12,
+                  flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: selectedVendor ? colors.textPrimary : colors.placeholder, fontSize: fontSize.base }}>
+                  {selectedVendor ? `${selectedVendor.name} (${selectedVendor.code})` : 'Select preferred vendor...'}
+                </Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>▼</Text>
+              </TouchableOpacity>
+
+              {selectedVendor && (
+                <TouchableOpacity onPress={() => setField('preferred_vendor', null)} style={{ marginTop: spacing.xs }}>
+                  <Text style={{ color: colors.danger, fontSize: fontSize.xs }}>Clear vendor</Text>
+                </TouchableOpacity>
+              )}
+            </Card>
+          )}
+
+          {/* ── Status ── */}
+          {show(5) && (
+            <Card style={{ marginBottom: spacing.xl }}>
+              <View style={styles.switchRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 16, marginRight: spacing.sm }}>
+                    {form.is_active ? '🟢' : '🔴'}
+                  </Text>
+                  <Text style={{ color: colors.textPrimary, fontSize: fontSize.base, fontWeight: fontWeight.medium }}>
+                    {form.is_active ? 'Active Product' : 'Inactive Product'}
+                  </Text>
+                </View>
+                <Switch
+                  value={form.is_active}
+                  onValueChange={(v) => setField('is_active', v)}
+                  trackColor={{ true: colors.primary, false: colors.border }}
+                />
+              </View>
+            </Card>
+          )}
+
+          {/* ── Submit ── */}
+          {!wizard && (
+            <Button
+              title={saving ? 'Saving...' : 'Update Product'}
+              onPress={onSubmit}
+              loading={saving}
+              fullWidth
+              size="lg"
             />
-          </View>
-        </Card>
+          )}
+        </ScrollView>
 
-        {/* ── Submit ── */}
-        <Button
-          title={saving ? 'Saving...' : (isEdit ? 'Update Product' : 'Create Product')}
-          onPress={onSubmit}
-          loading={saving}
-          fullWidth
-          size="lg"
-        />
-      </ScrollView>
+        {wizard && (
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+            paddingHorizontal: spacing.base, paddingTop: spacing.sm,
+            paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 0) + spacing.sm,
+            borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface,
+            elevation: 8, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: -2 },
+          }}>
+            {step > 0 && (
+              <View style={{ flex: 1 }}>
+                <Button title="Back" variant="outline" size="lg" fullWidth style={{ paddingHorizontal: 8 }} onPress={() => setStep(step - 1)} />
+              </View>
+            )}
+            {step === 4 && (
+              <View style={{ flex: 1 }}>
+                <Button title="Skip" variant="ghost" size="lg" fullWidth style={{ paddingHorizontal: 8 }} onPress={() => setStep(step + 1)} />
+              </View>
+            )}
+            <View style={{ flex: 2 }}>
+              {step < LAST_STEP
+                ? <Button title="Next" size="lg" fullWidth style={{ paddingHorizontal: 8 }} onPress={goNext} />
+                : <Button title={saving ? 'Saving...' : 'Create Product'} size="lg" fullWidth style={{ paddingHorizontal: 8 }} onPress={onSubmit} loading={saving} />}
+            </View>
+          </View>
+        )}
+      </KeyboardAvoidingView>
 
       {/* ── Vendor Picker Modal ── */}
       <Modal visible={showVendorPicker} transparent animationType="fade">
