@@ -99,7 +99,7 @@ export function usePermissions(): Permissions {
       // Catalogue
       canCreateProducts: CAN_MANAGE_CATALOGUE.has(r),
       canEditProducts: CAN_MANAGE_CATALOGUE.has(r),
-      canDeleteProducts: ADMIN.has(r),
+      canDeleteProducts: CAN_MANAGE_CATALOGUE.has(r),
       // Inventory
       canAdjustStock: CAN_ADJUST_STOCK.has(r),
       canViewInventory: true, // all roles

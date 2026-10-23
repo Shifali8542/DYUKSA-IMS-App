@@ -18,6 +18,8 @@ export function useInventory() {
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [deleting, setDeleting] = useState(false);
 
   // Debounce search input
   function setSearch(text: string) {
@@ -63,6 +65,28 @@ export function useInventory() {
     fetchProducts(page + 1, false);
   }
 
+  useEffect(() => { setSelected([]); }, [debouncedSearch, category]);
+
+  function toggleSelect(id: number) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function selectAll() { setSelected(products.map((p) => p.id)); }
+
+  function clearSelection() { setSelected([]); }
+
+  async function deleteSelected() {
+    setDeleting(true);
+    try {
+      const res = await ProductApi.deleteProducts(selected);
+      setSelected([]);
+      await fetchProducts(1, true);
+      return res;
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   // Fetch categories once
   useEffect(() => {
     CategoryApi.getCategories().then(setCategories).catch(() => { });
@@ -73,6 +97,7 @@ export function useInventory() {
     category, setCategory,
     loading, refreshing, error,
     hasMore, total, loadMore,
+    selected, deleting, toggleSelect, selectAll, clearSelection, deleteSelected,
     refresh: () => fetchProducts(1, true),
   };
 }

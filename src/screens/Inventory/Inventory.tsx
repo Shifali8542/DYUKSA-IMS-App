@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert, BackHandler } from 'react-native';
 import { tokenStorage } from '../../utils/tokenStorage';
 import { imsClient } from '../../api/api';
 import { styles } from './Inventory.styles';
@@ -23,31 +23,73 @@ const ExpoSharing = require('expo-sharing');
 
 export default function InventoryScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
-  const { canCreateProducts } = usePermissions();
+  const { canCreateProducts, canDeleteProducts } = usePermissions();
   const nav = useNavigation<Nav>();
   const {
     products, categories, search, setSearch,
     category, setCategory,
     loading, refreshing, error,
     hasMore, total, loadMore, refresh,
+    selected, deleting, toggleSelect, selectAll, clearSelection, deleteSelected,
   } = useInventory();
+
+  const selecting = selected.length > 0;
+  const allSelected = selecting && selected.length === products.length;
+
+  useEffect(() => {
+    if (!selecting) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { clearSelection(); return true; });
+    return () => sub.remove();
+  }, [selecting]);
+
+  function confirmDelete() {
+    const n = selected.length;
+    Alert.alert(
+      `Delete ${n} product${n > 1 ? 's' : ''}?`,
+      `Are you sure you want to delete ${n > 1 ? 'these products' : 'this product'}? Any with stock or order history will be hidden instead of removed so your records stay correct.`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Delete', style: 'destructive',
+          onPress: async () => {
+            try {
+              const { done, failed } = await deleteSelected();
+              Alert.alert(failed ? 'Partly done' : 'Done', failed ? `${done} deleted. ${failed} could not be deleted, please try again.` : `${done} product${done > 1 ? 's' : ''} deleted.`);
+            } catch {
+              Alert.alert('Something went wrong', 'We could not delete the products. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  }
 
   function renderProduct({ item }: { item: Product }) {
     return (
       <TouchableOpacity
-        onPress={() => nav.navigate('ProductDetails', { productId: item.id })}
+        onPress={() => (selecting ? toggleSelect(item.id) : nav.navigate('ProductDetails', { productId: item.id }))}
+        onLongPress={() => { if (canDeleteProducts) toggleSelect(item.id); }}
         style={[
           styles.row,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: selected.includes(item.id) ? colors.primaryLight : colors.surface,
             borderRadius: borderRadius.md,
             padding: spacing.base,
             marginBottom: spacing.sm,
-            borderColor: colors.border,
+            borderColor: selected.includes(item.id) ? colors.primary : colors.border,
             borderWidth: 1,
           },
         ]}
       >
+        {selecting && (
+          <View style={{
+            width: 22, height: 22, borderRadius: 4, marginRight: spacing.sm, borderWidth: 2,
+            borderColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: selected.includes(item.id) ? colors.primary : 'transparent',
+          }}>
+            {selected.includes(item.id) && <Text style={{ color: colors.textInverse, fontSize: 14, fontWeight: '700' }}>✓</Text>}
+          </View>
+        )}
         <View style={styles.rowLeft}>
           <Text style={[styles.name, { color: colors.textPrimary, fontSize: fontSize.base, fontWeight: fontWeight.medium }]}>
             {item.name}
@@ -78,97 +120,129 @@ export default function InventoryScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { padding: spacing.base, backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
-        <View>
-          <Text style={[styles.title, { color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold }]}>
-            Inventory
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm }}>{total} products</Text>
-        </View>
-        {canCreateProducts && (
-          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-            <TouchableOpacity
-              onPress={async () => {
-                const fmt = await new Promise<'csv' | 'xlsx' | null>((resolve) => {
-                  Alert.alert('Export Products', 'Choose format:', [
-                    { text: 'CSV', onPress: () => resolve('csv') },
-                    { text: 'Excel', onPress: () => resolve('xlsx') },
-                    { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
-                  ]);
-                });
-                if (!fmt) return;
-
-                Alert.alert('Exporting...', 'Downloading your products file.');
-
-                try {
-                  const accessToken = await tokenStorage.getAccessToken();
-                  const baseURL = imsClient.defaults.baseURL ?? '';
-                  const url = `${baseURL}/api/v1/products/export/?file_format=${fmt}`;
-
-                  // Use expo-print to create a temp HTML → PDF won't work for CSV/XLSX
-                  // Instead: fetch as arraybuffer → write to file → share
-                  const resp = await fetch(url, {
-                    headers: { Authorization: `Bearer ${accessToken ?? ''}` },
-                  });
-
-                  if (!resp.ok) {
-                    Alert.alert('Error', `Server returned ${resp.status}`);
-                    return;
-                  }
-
-                  const arrayBuffer = await resp.arrayBuffer();
-                  const bytes = new Uint8Array(arrayBuffer);
-                  let binary = '';
-                  for (let i = 0; i < bytes.length; i++) {
-                    binary += String.fromCharCode(bytes[i]);
-                  }
-                  const base64 = btoa(binary);
-
-                  const filePath = `${ExpoFS.cacheDirectory}products_export.${fmt}`;
-
-                  await ExpoFS.writeAsStringAsync(filePath, base64, {
-                    encoding: 'base64',
-                  });
-
-                  if (await ExpoSharing.isAvailableAsync()) {
-                    await ExpoSharing.shareAsync(filePath, {
-                      mimeType: fmt === 'xlsx'
-                        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                        : 'text/csv',
-                      dialogTitle: 'Share Product Export',
-                    });
-                  } else {
-                    Alert.alert('Done', 'File saved but sharing not available on this device.');
-                  }
-                } catch (e: any) {
-                  Alert.alert('Export Error', e?.message ?? 'Something went wrong.');
-                }
-              }}
-              style={{
-                backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
-                paddingHorizontal: spacing.sm, paddingVertical: spacing.sm,
-                borderWidth: 1, borderColor: colors.border,
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-              }}
-            >
-              <Text style={{ fontSize: 12 }}>📥</Text>
-              <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Export</Text>
+      {selecting ? (
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+          padding: spacing.base, backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.base }}>
+            <TouchableOpacity onPress={clearSelection} hitSlop={10}>
+              <Text style={{ color: colors.textPrimary, fontSize: fontSize.lg }}>✕</Text>
+            </TouchableOpacity>
+            <Text style={{ color: colors.textPrimary, fontSize: fontSize.md, fontWeight: fontWeight.bold }}>
+              {selected.length} selected
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.base }}>
+            <TouchableOpacity onPress={allSelected ? clearSelection : selectAll} hitSlop={10}>
+              <Text style={{ color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>
+                {allSelected ? 'Unselect all' : 'Select all'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => nav.navigate('BulkImport')}
-              style={{
-                backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
-                paddingHorizontal: spacing.sm, paddingVertical: spacing.sm,
-                borderWidth: 1, borderColor: colors.border,
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-              }}
+              onPress={confirmDelete}
+              disabled={deleting}
+              style={{ backgroundColor: colors.danger, borderRadius: borderRadius.md, paddingHorizontal: spacing.base, paddingVertical: spacing.sm, opacity: deleting ? 0.5 : 1 }}
             >
-              <Text style={{ fontSize: 12 }}>📤</Text>
-              <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Import</Text>
+              <Text style={{ color: colors.textInverse, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </Text>
             </TouchableOpacity>
           </View>
-        )}
-      </View>
+        </View>
+      ) : (
+        <View style={[styles.header, { padding: spacing.base, backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
+          <View>
+            <Text style={[styles.title, { color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: fontWeight.bold }]}>
+              Inventory
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm }}>{total} products</Text>
+          </View>
+          {canCreateProducts && (
+            <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+              <TouchableOpacity
+                onPress={async () => {
+                  const fmt = await new Promise<'csv' | 'xlsx' | null>((resolve) => {
+                    Alert.alert('Export Products', 'Choose format:', [
+                      { text: 'CSV', onPress: () => resolve('csv') },
+                      { text: 'Excel', onPress: () => resolve('xlsx') },
+                      { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+                    ]);
+                  });
+                  if (!fmt) return;
+
+                  Alert.alert('Exporting...', 'Downloading your products file.');
+
+                  try {
+                    const accessToken = await tokenStorage.getAccessToken();
+                    const baseURL = imsClient.defaults.baseURL ?? '';
+                    const url = `${baseURL}/api/v1/products/export/?file_format=${fmt}`;
+
+                    // Use expo-print to create a temp HTML → PDF won't work for CSV/XLSX
+                    // Instead: fetch as arraybuffer → write to file → share
+                    const resp = await fetch(url, {
+                      headers: { Authorization: `Bearer ${accessToken ?? ''}` },
+                    });
+
+                    if (!resp.ok) {
+                      Alert.alert('Error', `Server returned ${resp.status}`);
+                      return;
+                    }
+
+                    const arrayBuffer = await resp.arrayBuffer();
+                    const bytes = new Uint8Array(arrayBuffer);
+                    let binary = '';
+                    for (let i = 0; i < bytes.length; i++) {
+                      binary += String.fromCharCode(bytes[i]);
+                    }
+                    const base64 = btoa(binary);
+
+                    const filePath = `${ExpoFS.cacheDirectory}products_export.${fmt}`;
+
+                    await ExpoFS.writeAsStringAsync(filePath, base64, {
+                      encoding: 'base64',
+                    });
+
+                    if (await ExpoSharing.isAvailableAsync()) {
+                      await ExpoSharing.shareAsync(filePath, {
+                        mimeType: fmt === 'xlsx'
+                          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                          : 'text/csv',
+                        dialogTitle: 'Share Product Export',
+                      });
+                    } else {
+                      Alert.alert('Done', 'File saved but sharing not available on this device.');
+                    }
+                  } catch (e: any) {
+                    Alert.alert('Export Error', e?.message ?? 'Something went wrong.');
+                  }
+                }}
+                style={{
+                  backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
+                  paddingHorizontal: spacing.sm, paddingVertical: spacing.sm,
+                  borderWidth: 1, borderColor: colors.border,
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                }}
+              >
+                <Text style={{ fontSize: 12 }}>📥</Text>
+                <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Export</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => nav.navigate('BulkImport')}
+                style={{
+                  backgroundColor: colors.surfaceSecondary, borderRadius: borderRadius.md,
+                  paddingHorizontal: spacing.sm, paddingVertical: spacing.sm,
+                  borderWidth: 1, borderColor: colors.border,
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                }}
+              >
+                <Text style={{ fontSize: 12 }}>📤</Text>
+                <Text style={{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold }}>Import</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Search + Scan */}
       <View style={{ padding: spacing.base, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
@@ -227,6 +301,7 @@ export default function InventoryScreen() {
         data={products}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderProduct}
+        extraData={selected}
         contentContainerStyle={[styles.list, { padding: spacing.base }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
         onEndReached={loadMore}
@@ -241,7 +316,7 @@ export default function InventoryScreen() {
         ListFooterComponent={hasMore ? <Loader /> : null}
       />
       {/* FAB — Add Product (role-gated) */}
-      {canCreateProducts && (
+      {canCreateProducts && !selecting && (
         <TouchableOpacity
           onPress={() => nav.navigate('ProductForm', {})}
           style={{

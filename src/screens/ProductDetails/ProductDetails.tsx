@@ -39,28 +39,32 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
 
   function handleDelete() {
     Alert.alert(
-      'Delete Product',
-      'This will deactivate the product if it has transaction history, or permanently delete it. Continue?',
+      'Delete this product?',
+      'Are you sure you want to delete this product? If it already has stock or order history, it will be hidden instead of removed so your records stay correct.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'No', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Yes, Delete',
           style: 'destructive',
           onPress: async () => {
             setDeleting(true);
             try {
               await ProductApi.deleteProduct(productId);
             } catch (e: any) {
-              // 204 is success, ignore. Only show error for real failures.
-              if (e?.response?.status && e.response.status !== 204) {
-                Alert.alert('Error', e?.response?.data?.message ?? e?.message ?? 'Delete failed');
+              if (e?.response?.status !== 204) {
+                const msg = e?.response?.status === 403
+                  ? 'You do not have permission to delete products.'
+                  : !e?.response
+                    ? 'Please check your internet connection and try again.'
+                    : 'We could not delete this product. Please try again.';
+                Alert.alert('Could not delete', msg);
                 setDeleting(false);
                 return;
               }
             }
             setDeleting(false);
             navigation.goBack();
-            setTimeout(() => Alert.alert('Done', 'Product deleted.'), 300);
+            setTimeout(() => Alert.alert('Done', 'The product has been deleted.'), 300);
           },
         },
       ]

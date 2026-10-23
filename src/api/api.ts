@@ -26,7 +26,7 @@ export const imsClient = axios.create({
 });
 
 // ── Session expiry: lets the app go back to Login when the session can't be refreshed
-let onSessionExpired: () => void = () => {};
+let onSessionExpired: () => void = () => { };
 export function setOnSessionExpired(fn: () => void) { onSessionExpired = fn; }
 
 // ── Request interceptor: attach Bearer token 
@@ -188,6 +188,14 @@ export const ProductApi = {
       if (e?.response?.status === 204) return;
       throw e;
     });
+  },
+  deleteProducts: async (ids: number[]): Promise<{ done: number; failed: number }> => {
+    let done = 0;
+    for (let i = 0; i < ids.length; i += 5) {
+      const res = await Promise.allSettled(ids.slice(i, i + 5).map((id) => ProductApi.deleteProduct(id)));
+      done += res.filter((r) => r.status === 'fulfilled').length;
+    }
+    return { done, failed: ids.length - done };
   },
   getBatches: async (productId: number): Promise<Batch[]> => {
     const { data } = await imsClient.get(`/api/v1/products/${productId}/batches/`);
