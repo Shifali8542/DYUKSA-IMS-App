@@ -26,6 +26,7 @@ import POFormScreen from '../screens/POForm/POForm';
 import PODetailScreen from '../screens/PODetail/PODetail';
 import SuppliersScreen from '../screens/Suppliers/Suppliers';
 import BulkImportScreen from '../screens/BulkImport/BulkImport';
+import InvoiceImportScreen from '../screens/InvoiceImport/InvoiceImport';
 import InvoicesScreen from '../screens/Invoices/Invoices';
 import InvoiceDetailScreen from '../screens/InvoiceDetail/InvoiceDetail';
 import InvoicePreviewScreen from '../screens/InvoicePreview/InvoicePreview';
@@ -119,7 +120,7 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
       </View>
 
       {/* Menu Items */}
-            <ScrollView
+      <ScrollView
         style={{ flex: 1, marginTop: spacing.sm }}
         showsVerticalScrollIndicator={false}
         bounces={false}
@@ -292,6 +293,9 @@ function MainStack({ onLogout }: Props) {
       <Stack.Screen name="Suppliers" component={SuppliersScreen} options={{ headerShown: true, title: 'Suppliers' }} />
       <Stack.Screen name="BulkImport" options={{ headerShown: true, title: 'Import Products' }}>
         {(props: any) => <BulkImportScreen {...props} />}
+      </Stack.Screen>
+      <Stack.Screen name="InvoiceImport" options={{ headerShown: true, title: 'Import Invoice' }}>
+        {(props: any) => <InvoiceImportScreen {...props} />}
       </Stack.Screen>
       <Stack.Screen name="Scanner" options={{ headerShown: true, title: 'Barcode Scanner' }}>
         {(props: any) => <ScannerScreen {...props} />}

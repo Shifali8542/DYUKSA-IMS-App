@@ -250,6 +250,31 @@ export interface StockAdjustmentResponse {
 }
 
 // ── Warehouse / Category 
+export interface InvoiceRow {
+  name: string;
+  sku: string;
+  quantity: string;
+  cost_price: string;
+  tax_rate: string;
+  flags?: string[];
+}
+
+export interface InvoiceExtractResult {
+  rows: InvoiceRow[];
+  source: string;
+  warnings: string[];
+}
+
+export interface InvoiceImportSummary {
+  dry_run: boolean;
+  total_rows: number;
+  will_create: number;
+  will_add_stock: number;
+  stock_units: string;
+  skipped: number;
+  errors: { row: number; sku?: string; error: string }[];
+}
+
 export interface Warehouse {
   id: number;
   name: string;
@@ -480,6 +505,7 @@ export type MainStackParamList = {
   PODetail: { poId: number };
   Suppliers: undefined;
   BulkImport: undefined;
+  InvoiceImport: { file: { uri: string; name: string; type: string } };
   Invoices: undefined;
   InvoiceDetail: { invoiceId: number };
   InvoicePreview: { invoiceId: number };

@@ -51,7 +51,7 @@ export default function BulkImportScreen({ navigation }: Props) {
               SUPPORTED FORMATS
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, lineHeight: 18 }}>
-              CSV (.csv) or Excel (.xlsx, .xls)
+              CSV (.csv), Excel (.xlsx, .xls), or an invoice PDF / photo
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: fontWeight.semibold, letterSpacing: 0.5, marginTop: spacing.base, marginBottom: spacing.sm }}>
               REQUIRED COLUMNS
@@ -131,7 +131,7 @@ export default function BulkImportScreen({ navigation }: Props) {
                     Tap to select file
                   </Text>
                   <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs, marginTop: 4 }}>
-                    .csv, .xlsx, or .xls
+                    .csv, .xlsx, .xls, PDF or photo
                   </Text>
                 </>
               )}
@@ -299,7 +299,7 @@ export default function BulkImportScreen({ navigation }: Props) {
         {error && status === 'error' && (
           <Card style={{ marginTop: spacing.base, borderWidth: 1, borderColor: colors.danger }}>
             <Text style={{ color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, marginBottom: spacing.xs }}>
-              Import Failed
+              Please check your file
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: fontSize.xs }}>
               {error}

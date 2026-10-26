@@ -3,7 +3,7 @@ import { tokenStorage } from '../utils/tokenStorage';
 import type {
   LoginResponse, RefreshResponse, DashboardData, Product, ProductCreatePayload, ProductImage, ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse, Warehouse, SalesOrder, CreateOrderPayload,
   PurchaseOrder, Invoice, InvoicePayment, InvoiceSettings, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User, SalesReturn, PurchaseReturn,
-  DispatchNote, StockMovement, Batch, LowStockItem, SalesReportRow, SalesReportSummary, InventoryReportRow, PurchaseReportRow, PurchaseReportSummary, WarehouseTransfer,
+  DispatchNote, StockMovement, Batch, LowStockItem, InvoiceRow, InvoiceExtractResult, InvoiceImportSummary, SalesReportRow, SalesReportSummary, InventoryReportRow, PurchaseReportRow, PurchaseReportSummary, WarehouseTransfer,
 } from '../types';
 
 // Base URLs — from environment
@@ -188,6 +188,32 @@ export const ProductApi = {
       if (e?.response?.status === 204) return;
       throw e;
     });
+  },
+    extractDocument: async (file: { uri: string; name: string; type: string }): Promise<InvoiceExtractResult> => {
+    // fetch is used because axios breaks with RN file URIs
+    const form = new FormData();
+    form.append('file', file as any);
+    const token = await tokenStorage.getAccessToken();
+    const wsId = await tokenStorage.getWorkspaceId();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (wsId) headers['X-Workspace-ID'] = wsId;
+    const response = await fetch(`${IMS_URL}/api/v1/products/extract-document/`, { method: 'POST', headers, body: form });
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw { response: { status: response.status, data: errBody }, message: errBody?.error?.message || response.statusText };
+    }
+    const data = await response.json();
+    return data.data ?? data;
+  },
+  importInvoice: async (payload: {
+    rows: Pick<InvoiceRow, 'name' | 'sku' | 'quantity' | 'cost_price' | 'tax_rate'>[];
+    warehouse: number | null;
+    reference: string;
+    dry_run: boolean;
+  }): Promise<InvoiceImportSummary> => {
+    const { data } = await imsClient.post('/api/v1/products/import-invoice/', payload);
+    return data.data ?? data;
   },
   deleteProducts: async (ids: number[]): Promise<{ done: number; failed: number }> => {
     let done = 0;

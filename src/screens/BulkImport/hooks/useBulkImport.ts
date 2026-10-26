@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { Alert, Linking } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { imsClient } from '../../../api/api';
@@ -21,6 +22,7 @@ export type ImportMode = 'create' | 'update' | 'upsert';
 type ImportStatus = 'idle' | 'picking' | 'previewing' | 'uploading' | 'done' | 'error';
 
 export function useBulkImport() {
+  const navigation = useNavigation<any>();
   const [status, setStatus] = useState<ImportStatus>('idle');
   const [file, setFile] = useState<{ name: string; uri: string; type: string } | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -36,12 +38,7 @@ export function useBulkImport() {
 
     try {
       const res = await DocumentPicker.getDocumentAsync({
-        type: [
-          'text/csv',
-          'text/comma-separated-values',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ],
+        type: '*/*',
         copyToCacheDirectory: true,
       });
 
@@ -51,6 +48,17 @@ export function useBulkImport() {
       }
 
       const picked = res.assets[0];
+      console.log('[BulkImport] picked:', picked.name, picked.mimeType, picked.size);
+      if (/\.(pdf|jpe?g|png|webp|bmp|tiff?)$/i.test(picked.name)) {
+        setStatus('idle');
+        navigation.navigate('InvoiceImport', { file: { name: picked.name, uri: picked.uri, type: picked.mimeType ?? 'application/octet-stream' } });
+        return;
+      }
+      if (!/\.(csv|xlsx|xls)$/i.test(picked.name)) {
+        setError('Please choose a CSV, Excel, PDF or photo file.');
+        setStatus('error');
+        return;
+      }
       setFile({
         name: picked.name,
         uri: picked.uri,
@@ -151,7 +159,7 @@ export function useBulkImport() {
     setMode('create');
     setStatus('idle');
   }
-    async function downloadTemplate(fmt: 'csv' | 'xlsx' = 'csv') {
+  async function downloadTemplate(fmt: 'csv' | 'xlsx' = 'csv') {
     try {
       const baseURL = imsClient.defaults.baseURL ?? '';
       const url = `${baseURL}/api/v1/products/bulk-import-template/?format=${fmt}`;
