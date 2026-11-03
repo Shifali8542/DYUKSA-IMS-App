@@ -90,7 +90,7 @@ export function useProductForm(productId?: number, prefillBarcode?: string) {
         });
       }
     } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to load form data');
+      Alert.alert('Error', parseBackendError(e));
     } finally {
       setLoading(false);
     }

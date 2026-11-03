@@ -8,19 +8,13 @@ import Input from '../../components/Input/Input';
 import Button from '../../components/Button/Button';
 import Card from '../../components/Card/Card';
 import type { MainStackParamList, InvoiceRow, InvoiceImportSummary, Warehouse } from '../../types';
+import { parseBackendError } from '../../utils/parseError';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'InvoiceImport'>;
 type Phase = 'reading' | 'review' | 'failed';
 type ItemErrors = Partial<Record<keyof InvoiceRow, string>>;
 
-function friendly(e: any): string {
-    const status = e?.response?.status;
-    if (status === 403) return 'You do not have permission to import invoices.';
-    if (!e?.response) return 'Please check your internet connection and try again.';
-    const msg = e?.response?.data?.error?.message;
-    if (msg && status < 500) return msg;
-    return 'Something went wrong. Please try again.';
-}
+const friendly = parseBackendError;
 
 function isBadNumber(v: string) {
     return v.trim() !== '' && (isNaN(Number(v)) || Number(v) < 0);

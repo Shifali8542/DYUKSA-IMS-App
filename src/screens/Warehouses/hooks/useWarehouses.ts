@@ -39,7 +39,7 @@ export function useWarehouses(): WarehouseState {
       const data = await WarehouseApi.getWarehouses({ is_active: true });
       setWarehouses(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load warehouses');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -35,7 +35,7 @@ export function useSuppliers() {
       const data = await OrderApi.getSuppliers({ search: search || undefined });
       setSuppliers(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load suppliers');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
       setRefreshing(false);

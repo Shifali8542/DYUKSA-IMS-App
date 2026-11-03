@@ -4,6 +4,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { imsClient } from '../../../api/api';
 import { tokenStorage } from '../../../utils/tokenStorage';
+import { parseBackendError } from '../../../utils/parseError';
 
 export function usePackingSlipPreview(dispatchId: number) {
   const [html, setHtml]       = useState<string | null>(null);
@@ -20,10 +21,10 @@ export function usePackingSlipPreview(dispatchId: number) {
       const resp = await fetch(`${baseURL}/api/v1/dispatch/${dispatchId}/packing-slip/`, {
         headers: { Authorization: `Bearer ${accessToken ?? ''}` },
       });
-      if (!resp.ok) throw new Error(`Server error ${resp.status}`);
+      if (!resp.ok) throw { response: { status: resp.status } };
       setHtml(await resp.text());
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load packing slip');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
     }

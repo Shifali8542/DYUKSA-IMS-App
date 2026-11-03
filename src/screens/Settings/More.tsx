@@ -16,7 +16,7 @@ interface Props { onLogout: () => void; }
 
 export default function MoreScreen({ onLogout }: Props) {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
-    const { canCreateCustomers, canManagePurchasing, isAdmin } = usePermissions();
+    const { canCreateCustomers, canManagePurchasing, isAdmin, canManageUsers } = usePermissions();
   const nav = useNavigation<Nav>();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -24,6 +24,7 @@ export default function MoreScreen({ onLogout }: Props) {
     { label: 'My Profile', icon: '👤', screen: 'Profile', show: true },
     { label: 'Customers', icon: '👥', screen: 'Customers', show: canCreateCustomers },
     { label: 'Suppliers', icon: '🏢', screen: 'Suppliers', show: canManagePurchasing || isAdmin },
+    { label: 'Users', icon: '🧑‍💼', screen: 'Users', show: canManageUsers },
     { label: 'Warehouses', icon: '🏭', screen: 'Warehouses', show: true },
     { label: 'Settings', icon: '⚙️', screen: 'Settings', show: true },
   ].filter((item) => item.show);

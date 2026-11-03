@@ -4,6 +4,7 @@ import { Alert, Linking } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { imsClient } from '../../../api/api';
 import { tokenStorage } from '../../../utils/tokenStorage';
+import { parseBackendError } from '../../../utils/parseError';
 
 export interface ImportResult {
   dry_run: boolean;
@@ -96,7 +97,7 @@ export function useBulkImport() {
 
     if (!resp.ok) {
       const errBody = await resp.json().catch(() => null);
-      throw new Error(errBody?.message ?? errBody?.error ?? `Server error ${resp.status}`);
+      throw { response: { status: resp.status, data: errBody } };
     }
 
     const json = await resp.json();
@@ -119,7 +120,7 @@ export function useBulkImport() {
       setStatus('idle');
       return true;
     } catch (e: any) {
-      setError(e.message ?? 'Preview failed.');
+      setError(parseBackendError(e));
       setStatus('error');
       return false;
     }
@@ -142,7 +143,7 @@ export function useBulkImport() {
       setStatus('done');
       return true;
     } catch (e: any) {
-      const msg = e.message ?? 'Import failed.';
+      const msg = parseBackendError(e);
       setError(msg);
       setStatus('error');
       Alert.alert('Import Failed', msg);

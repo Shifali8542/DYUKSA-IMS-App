@@ -15,6 +15,7 @@ import Loader from '../../components/Loader/Loader';
 import EmptyState from '../../components/EmptyState/EmptyState';
 import ErrorState from '../../components/ErrorState/ErrorState';
 import type { Product, MainStackParamList } from '../../types';
+import { parseBackendError } from '../../utils/parseError';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -214,7 +215,7 @@ export default function InventoryScreen() {
                       Alert.alert('Done', 'File saved but sharing not available on this device.');
                     }
                   } catch (e: any) {
-                    Alert.alert('Export Error', e?.message ?? 'Something went wrong.');
+                    Alert.alert('Export Error', parseBackendError(e));
                   }
                 }}
                 style={{

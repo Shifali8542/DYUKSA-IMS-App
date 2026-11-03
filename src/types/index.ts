@@ -75,6 +75,21 @@ export interface User {
   is_active: boolean;
 }
 
+// ── Central user directory (read-only, admin) 
+export interface ImsDirectoryUser {
+  id: number;
+  central_user_id: number;
+  email: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  ims_role: ImsRole | string;
+  is_active: boolean;
+  organization_id: number;
+  emp_id: string;
+  employment_status: string;
+}
+
 // ── Dashboard 
 export interface DashboardData {
   total_products: number;
@@ -504,6 +519,7 @@ export type MainStackParamList = {
   POForm: undefined;
   PODetail: { poId: number };
   Suppliers: undefined;
+  Users: undefined;
   BulkImport: undefined;
   InvoiceImport: { file: { uri: string; name: string; type: string } };
   Invoices: undefined;

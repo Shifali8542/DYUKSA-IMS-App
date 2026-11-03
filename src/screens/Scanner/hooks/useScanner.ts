@@ -3,6 +3,7 @@ import { Vibration } from 'react-native';
 import { useCameraPermissions } from 'expo-camera';
 import { ProductApi } from '../../../api/api';
 import type { Product } from '../../../types';
+import { parseBackendError } from '../../../utils/parseError';
 
 export type ScanResult =
   | { status: 'idle' }
@@ -42,7 +43,7 @@ export function useScanner() {
         setResult({ status: 'not_found', barcode: data });
       }
     } catch (e: any) {
-      setResult({ status: 'error', barcode: data, message: e?.message ?? 'Search failed' });
+      setResult({ status: 'error', barcode: data, message: parseBackendError(e) });
     }
   }, []);
 

@@ -14,6 +14,7 @@ import Loader from '../../components/Loader/Loader';
 import ErrorState from '../../components/ErrorState/ErrorState';
 import { RETURN_STATUS_LABEL, DISPOSITION_LABEL, DISPOSITION_ICON } from '../../constants';
 import type { MainStackParamList } from '../../types';
+import { parseBackendError } from '../../utils/parseError';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'SalesReturnDetail'>;
 
@@ -258,7 +259,7 @@ export default function SalesReturnDetailScreen({ route }: Props) {
                       setShowRefund(false);
                       refresh();
                     } catch (e: any) {
-                      Alert.alert('Error', e?.response?.data?.error?.message ?? 'Failed to process refund.');
+                      Alert.alert('Error', parseBackendError(e));
                     } finally {
                       setRefunding(false);
                     }

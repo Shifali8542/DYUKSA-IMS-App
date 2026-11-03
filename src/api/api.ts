@@ -4,6 +4,7 @@ import type {
   LoginResponse, RefreshResponse, DashboardData, Product, ProductCreatePayload, ProductImage, ProductStockResponse, StockAdjustmentPayload, StockAdjustmentResponse, Warehouse, SalesOrder, CreateOrderPayload,
   PurchaseOrder, Invoice, InvoicePayment, InvoiceSettings, Notification, Customer, CustomerCreatePayload, Supplier, Category, Brand, Unit, PaginatedResponse, IMSResponse, User, SalesReturn, PurchaseReturn,
   DispatchNote, StockMovement, Batch, LowStockItem, InvoiceRow, InvoiceExtractResult, InvoiceImportSummary, SalesReportRow, SalesReportSummary, InventoryReportRow, PurchaseReportRow, PurchaseReportSummary, WarehouseTransfer,
+  ImsDirectoryUser,
 } from '../types';
 
 // Base URLs — from environment
@@ -189,7 +190,7 @@ export const ProductApi = {
       throw e;
     });
   },
-    extractDocument: async (file: { uri: string; name: string; type: string }): Promise<InvoiceExtractResult> => {
+  extractDocument: async (file: { uri: string; name: string; type: string }): Promise<InvoiceExtractResult> => {
     // fetch is used because axios breaks with RN file URIs
     const form = new FormData();
     form.append('file', file as any);
@@ -405,9 +406,7 @@ export const DispatchApi = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
 // INVENTORY — /api/v1/inventory/
-// ═══════════════════════════════════════════════════════════════════════════
 export const InventoryApi = {
   adjustStock: async (payload: StockAdjustmentPayload): Promise<StockAdjustmentResponse> => {
     const { data } = await imsClient.post('/api/v1/inventory/adjust/', payload);
@@ -651,6 +650,12 @@ export const UserApi = {
   getMe: async (): Promise<User> => {
     const { data } = await imsClient.get<IMSResponse<User>>('/api/v1/users/me/');
     return data.data;
+  },
+  // Admin-only. IMS backend proxies Central's /internal/ims-users/ (token stays server-side).
+  getDirectory: async (): Promise<ImsDirectoryUser[]> => {
+    const { data } = await imsClient.get('/api/v1/users/central-directory/');
+    const list = Array.isArray(data) ? data : data?.data;
+    return Array.isArray(list) ? list : [];
   },
 };
 

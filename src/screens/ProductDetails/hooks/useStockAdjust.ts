@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { InventoryApi, WarehouseApi } from '../../../api/api';
 import type { Warehouse, StockAdjustmentPayload, StockAdjustmentResponse } from '../../../types';
+import { parseBackendError } from '../../../utils/parseError';
 
 interface AdjustForm {
   warehouse_id: number | null;
@@ -93,12 +94,7 @@ export function useStockAdjust(productId: number) {
         return false;
       }
 
-      const msg = errorData?.error?.message
-        ?? errorData?.message
-        ?? errorData?.detail
-        ?? e?.message
-        ?? 'Adjustment failed';
-      Alert.alert('Error', msg);
+      Alert.alert('Error', parseBackendError(e));
       return false;
     } finally {
       setSaving(false);

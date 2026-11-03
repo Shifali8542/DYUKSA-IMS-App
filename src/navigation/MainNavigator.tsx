@@ -25,6 +25,7 @@ import ScannerScreen from '../screens/Scanner/scanner';
 import POFormScreen from '../screens/POForm/POForm';
 import PODetailScreen from '../screens/PODetail/PODetail';
 import SuppliersScreen from '../screens/Suppliers/Suppliers';
+import UsersScreen from '../screens/Users/Users';
 import BulkImportScreen from '../screens/BulkImport/BulkImport';
 import InvoiceImportScreen from '../screens/InvoiceImport/InvoiceImport';
 import InvoicesScreen from '../screens/Invoices/Invoices';
@@ -72,7 +73,7 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { canManagePurchasing } = usePermissions();
+  const { canManagePurchasing, canManageUsers } = usePermissions();
 
   function navigateTo(screen: string, params?: Record<string, any>) {
     closeDrawer();
@@ -92,6 +93,7 @@ function DrawerContent({ closeDrawer, onLogout }: { closeDrawer: () => void; onL
     { label: 'Dispatches', icon: '🚚', onPress: () => navigateTo('Dispatches') },
     { label: 'Warehouses', icon: '🏭', onPress: () => navigateTo('Warehouses') },
     ...(canManagePurchasing ? [{ label: 'Suppliers', icon: '🏢', onPress: () => navigateTo('Suppliers') }] : []),
+    ...(canManageUsers ? [{ label: 'Users', icon: '👥', onPress: () => navigateTo('Users') }] : []),
     { label: 'Notifications', icon: '🔔', onPress: () => navigateTo('MainTabs', { screen: 'Alerts' }) },
     { label: 'My Profile', icon: '👤', onPress: () => navigateTo('Profile') },
     { label: 'Settings', icon: '⚙️', onPress: () => navigateTo('Settings') },
@@ -291,6 +293,7 @@ function MainStack({ onLogout }: Props) {
         {(props: any) => <PODetailScreen {...props} />}
       </Stack.Screen>
       <Stack.Screen name="Suppliers" component={SuppliersScreen} options={{ headerShown: true, title: 'Suppliers' }} />
+      <Stack.Screen name="Users" component={UsersScreen} options={{ headerShown: true, title: 'Users' }} />
       <Stack.Screen name="BulkImport" options={{ headerShown: true, title: 'Import Products' }}>
         {(props: any) => <BulkImportScreen {...props} />}
       </Stack.Screen>

@@ -4,6 +4,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { imsClient } from '../../../api/api';
 import { tokenStorage } from '../../../utils/tokenStorage';
+import { parseBackendError } from '../../../utils/parseError';
 
 export function useInvoicePreview(invoiceId: number) {
   const [html, setHtml]       = useState<string | null>(null);
@@ -24,12 +25,12 @@ export function useInvoicePreview(invoiceId: number) {
         headers: { Authorization: `Bearer ${accessToken ?? ''}` },
       });
 
-      if (!resp.ok) throw new Error(`Server error ${resp.status}`);
+            if (!resp.ok) throw { response: { status: resp.status } };
 
       const text = await resp.text();
       setHtml(text);
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load invoice');
+      setError(parseBackendError(e));
     } finally {
       setLoading(false);
     }
