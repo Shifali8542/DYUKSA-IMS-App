@@ -158,7 +158,7 @@ export const ReportApi = {
 export const ProductApi = {
   getProducts: async (params?: {
     search?: string; category?: number; brand?: number;
-    is_active?: boolean; ordering?: string; page?: number; page_size?: number;
+    is_active?: boolean; low_stock?: boolean; ordering?: string; page?: number; page_size?: number;
   }): Promise<PaginatedResponse<Product>> => {
     const { data } = await imsClient.get('/api/v1/products/', { params });
     return data;
@@ -380,7 +380,7 @@ export const InvoiceSettingsApi = {
 
 export const DispatchApi = {
   getDispatches: async (params?: {
-    status?: string; search?: string; page?: number;
+    status?: string; search?: string; page?: number; dispatched_today?: boolean;
   }): Promise<PaginatedResponse<DispatchNote>> => {
     const { data } = await imsClient.get('/api/v1/dispatch/', { params });
     return data;

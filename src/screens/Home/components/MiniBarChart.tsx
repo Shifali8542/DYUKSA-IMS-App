@@ -22,11 +22,11 @@ export default function MiniBarChart({ bars, height = 100, barWidth = 28, showVa
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', height: height + 24, paddingTop: 16 }}>
       {bars.map((bar, i) => {
-        const barHeight = Math.max((bar.value / maxVal) * height, 4);
+        const barHeight = bar.value > 0 ? Math.max((bar.value / maxVal) * height, 4) : 2;
         const barColor = bar.color ?? colors.primary;
         return (
           <View key={i} style={{ alignItems: 'center', flex: 1 }}>
-            {showValues && bar.value > 0 && (
+            {showValues && (
               <Text style={{ color: colors.textSecondary, fontSize: 8, fontWeight: fontWeight.medium, marginBottom: 2 }}>
                 {bar.value}
               </Text>

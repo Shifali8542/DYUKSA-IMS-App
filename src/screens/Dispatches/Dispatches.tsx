@@ -11,6 +11,7 @@ import SearchBar from '../../components/SearchBar/SearchBar';
 import Loader from '../../components/Loader/Loader';
 import EmptyState from '../../components/EmptyState/EmptyState';
 import ErrorState from '../../components/ErrorState/ErrorState';
+import FilterNotice from '../../components/FilterNotice/FilterNotice';
 import { DISPATCH_STATUS_LABEL } from '../../constants';
 import type { DispatchNote, MainStackParamList } from '../../types';
 
@@ -22,7 +23,7 @@ export default function DispatchesScreen() {
   const { colors, spacing, fontSize, fontWeight, borderRadius } = useTheme();
   const nav = useNavigation<Nav>();
   const {
-    filter, setFilter, search, setSearch,
+    filter, setFilter, search, setSearch, today, clearToday,
     dispatches, loading, refreshing, error, refresh,
   } = useDispatches();
 
@@ -133,6 +134,8 @@ export default function DispatchesScreen() {
           }}
         />
       </View>
+
+      {today && <FilterNotice label="Dispatched today" onClear={clearToday} />}
 
       {loading ? (
         <Loader fullScreen />

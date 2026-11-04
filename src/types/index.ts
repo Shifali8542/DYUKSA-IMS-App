@@ -95,6 +95,10 @@ export interface DashboardData {
   total_products: number;
   total_warehouses: number;
   low_stock_count: number;
+  no_stock_count: number;
+  healthy_stock_count: number;
+  currency: string;
+  can_view_reports: boolean;
   pending_orders: number;
   pending_dispatches: number;
   today_dispatches: number;
@@ -113,7 +117,8 @@ export interface DashboardData {
     code: string;
     capacity: number;
     items_on_hand: number;
-    capacity_percent: number;
+    unlimited: boolean;
+    capacity_percent: number | null;
   }[];
 }
 
@@ -504,6 +509,12 @@ export type MainTabParamList = {
   More: undefined;
 };
 
+// Route params used when Home cards open a pre-filtered screen.
+// `ts` changes on every tap, so the target screen re-applies the filter.
+export interface DispatchesParams { status?: DispatchStatus; today?: boolean; ts?: number }
+export interface OrdersTabParams { tab?: 'sales' | 'purchase'; status?: string; ts?: number }
+export interface InventoryTabParams { lowStock?: boolean; ts?: number }
+
 export type MainStackParamList = {
   MainTabs: undefined;
   ProductDetails: { productId: number };
@@ -527,7 +538,7 @@ export type MainStackParamList = {
   InvoicePreview: { invoiceId: number };
   InvoiceSettingsScreen: undefined;
   InvoiceForm: undefined;
-  Dispatches: undefined;
+  Dispatches: DispatchesParams | undefined;
   DispatchDetail: { dispatchId: number };
   SalesReturns: undefined;
   SalesReturnDetail: { returnId: number };

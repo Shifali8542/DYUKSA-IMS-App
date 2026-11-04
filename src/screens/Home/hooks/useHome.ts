@@ -1,28 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { DashboardApi } from '../../../api/api';
 import { parseBackendError } from '../../../utils/parseError';
 import { tokenStorage } from '../../../utils/tokenStorage';
 import { getUserDisplayName } from '../../../utils/jwt';
-import type { DashboardData, LowStockItem  } from '../../../types';
+import type { DashboardData, LowStockItem } from '../../../types';
 
-interface HomeState {
-  dashboard: DashboardData | null;
-  lowStock: LowStockItem[];
-  userName: string;
-  loading: boolean;
-  error: string | null;
-  refresh: () => void;
-}
-
-export function useHome(): HomeState {
+export function useHome() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [userName, setUserName] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);        // first load only
+  const [refreshing, setRefreshing] = useState(false); // pull-to-refresh
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (isPull = false) => {
+    if (isPull) setRefreshing(true);
     setError(null);
     try {
       const [dash, token] = await Promise.all([
@@ -31,22 +24,25 @@ export function useHome(): HomeState {
       ]);
       setDashboard(dash);
       if (token) setUserName(getUserDisplayName(token));
-
-      // Fetch actual low stock products from inventory report endpoint
-      try {
-        const items = await DashboardApi.getLowStockProducts(5);
-        setLowStock(items);
-      } catch {
+      if (dash.low_stock_count > 0) {
+        DashboardApi.getLowStockProducts(5).then(setLowStock).catch(() => setLowStock([]));
+      } else {
         setLowStock([]);
       }
     } catch (e: any) {
       setError(parseBackendError(e));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // Reload whenever Home comes back into view, so numbers are never stale
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  return { dashboard, lowStock, userName, loading, error, refresh: fetchAll };
+  return {
+    dashboard, lowStock, userName, loading, refreshing, error,
+    refresh: () => load(true),
+    retry: () => { setLoading(true); load(); },
+  };
 }

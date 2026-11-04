@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useState, useCallback, useEffect } from 'react';
+import { useFocusEffect, useRoute, type RouteProp } from '@react-navigation/native';
 import { OrderApi } from '../../../api/api';
 import { parseBackendError } from '../../../utils/parseError';
-import type { SalesOrder, PurchaseOrder } from '../../../types';
+import type { SalesOrder, PurchaseOrder, OrdersTabParams } from '../../../types';
 
 export type OrderTab = 'sales' | 'purchase';
 
@@ -15,6 +15,16 @@ export function useOrders() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Home cards open this tab pre-filtered; `ts` changes on every tap
+  const route = useRoute<RouteProp<{ Orders: OrdersTabParams }, 'Orders'>>();
+  const params = route.params;
+  useEffect(() => {
+    if (!params?.ts) return;
+    setTab(params.tab ?? 'sales');
+    setStatus(params.status ?? 'all');
+    setSearch('');
+  }, [params?.ts]);
 
   const fetchOrders = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);

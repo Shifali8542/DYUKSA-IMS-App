@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute, type RouteProp } from '@react-navigation/native';
 import { ProductApi, CategoryApi } from '../../../api/api';
 import { parseBackendError } from '../../../utils/parseError';
-import type { Product, Category } from '../../../types';
+import type { Product, Category, InventoryTabParams } from '../../../types';
 import { PAGE_SIZE } from '../../../constants';
 
 export function useInventory() {
@@ -11,6 +11,18 @@ export function useInventory() {
   const [search, setSearchRaw] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState<number | undefined>();
+  const [lowStock, setLowStock] = useState(false);
+
+  // Home cards open this tab pre-filtered; `ts` changes on every tap
+  const route = useRoute<RouteProp<{ Inventory: InventoryTabParams }, 'Inventory'>>();
+  const params = route.params;
+  useEffect(() => {
+    if (!params?.ts) return;
+    setLowStock(!!params.lowStock);
+    setCategory(undefined);
+    setSearchRaw('');
+    setDebouncedSearch('');
+  }, [params?.ts]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +47,7 @@ export function useInventory() {
       const res = await ProductApi.getProducts({
         search: debouncedSearch || undefined,
         category: category,
+        low_stock: lowStock || undefined,
         is_active: true,
         ordering: '-updated_at',
         page: pageNum,
@@ -51,13 +64,13 @@ export function useInventory() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [debouncedSearch, category]);
+  }, [debouncedSearch, category, lowStock]);
 
-  // Auto-refresh when screen regains focus (e.g. returning from ProductForm)
+  // Auto-refreshwhen screen regains focus (e.g. returning from ProductForm)
   useFocusEffect(
     useCallback(() => {
       fetchProducts(1, true);
-    }, [debouncedSearch, category])
+    }, [debouncedSearch, category, lowStock])
   );
 
   function loadMore() {
@@ -65,7 +78,7 @@ export function useInventory() {
     fetchProducts(page + 1, false);
   }
 
-  useEffect(() => { setSelected([]); }, [debouncedSearch, category]);
+  useEffect(() => { setSelected([]); }, [debouncedSearch, category, lowStock]);
 
   function toggleSelect(id: number) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -94,7 +107,7 @@ export function useInventory() {
 
   return {
     products, categories, search, setSearch,
-    category, setCategory,
+    category, setCategory, lowStock, setLowStock,
     loading, refreshing, error,
     hasMore, total, loadMore,
     selected, deleting, toggleSelect, selectAll, clearSelection, deleteSelected,

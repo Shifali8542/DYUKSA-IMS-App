@@ -14,6 +14,7 @@ import Badge from '../../components/Badge/Badge';
 import Loader from '../../components/Loader/Loader';
 import EmptyState from '../../components/EmptyState/EmptyState';
 import ErrorState from '../../components/ErrorState/ErrorState';
+import LowStockChip from './components/LowStockChip';
 import type { Product, MainStackParamList } from '../../types';
 import { parseBackendError } from '../../utils/parseError';
 
@@ -28,7 +29,7 @@ export default function InventoryScreen() {
   const nav = useNavigation<Nav>();
   const {
     products, categories, search, setSearch,
-    category, setCategory,
+    category, setCategory, lowStock, setLowStock,
     loading, refreshing, error,
     hasMore, total, loadMore, refresh,
     selected, deleting, toggleSelect, selectAll, clearSelection, deleteSelected,
@@ -261,6 +262,8 @@ export default function InventoryScreen() {
         </TouchableOpacity>
       </View>
 
+      <LowStockChip active={lowStock} onToggle={() => setLowStock(!lowStock)} />
+
       {/* Category filter */}
       {categories.length > 0 && (
         <View style={{ paddingHorizontal: spacing.base, paddingBottom: spacing.sm }}>
@@ -311,7 +314,11 @@ export default function InventoryScreen() {
           <EmptyState
             icon="📦"
             title="No products found"
-            description={search ? `No results for "${search}"` : 'Your inventory is empty.'}
+            description={
+              search ? `No results for "${search}"`
+                : lowStock ? 'No products are low on stock.'
+                  : 'Your inventory is empty.'
+            }
           />
         }
         ListFooterComponent={hasMore ? <Loader /> : null}
