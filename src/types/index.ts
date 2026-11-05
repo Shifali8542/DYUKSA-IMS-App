@@ -83,7 +83,7 @@ export interface ImsDirectoryUser {
   username: string;
   first_name: string;
   last_name: string;
-  ims_role: ImsRole | string;
+  ims_role: ImsRole | string | null; 
   is_active: boolean;
   organization_id: number;
   emp_id: string;

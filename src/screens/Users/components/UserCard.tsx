@@ -43,7 +43,10 @@ export default function UserCard({ user }: { user: ImsDirectoryUser }) {
         ) : null}
       </View>
 
-      <Badge label={getRoleLabel(user.ims_role)} variant="primary" />
+      <Badge
+        label={user.ims_role ? getRoleLabel(user.ims_role) : 'Not assigned'}
+        variant="primary"
+      />
     </View>
   );
 }

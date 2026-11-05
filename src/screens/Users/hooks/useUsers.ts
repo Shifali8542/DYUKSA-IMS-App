@@ -34,7 +34,9 @@ export function useUsers() {
 
   // Roles that actually exist in the list, for the filter chips
   const roles = useMemo(
-    () => Array.from(new Set(users.map((u) => u.ims_role))).sort(),
+    () => Array.from(
+      new Set(users.map((u) => u.ims_role).filter((r): r is string => !!r)),
+    ).sort(),
     [users],
   );
 

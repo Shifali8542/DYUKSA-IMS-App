@@ -7,9 +7,11 @@ import type {
   ImsDirectoryUser,
 } from '../types';
 
-// Base URLs — from environment
-const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'http://192.168.1.17:8001';
-const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL || 'http://192.168.1.15:8000';
+const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL;
+const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL;
+if (!CENTRAL_URL || !IMS_URL) {
+  throw new Error('Missing EXPO_PUBLIC_CENTRAL_URL or EXPO_PUBLIC_IMS_URL in .env');
+}
 
 // const CENTRAL_URL = process.env.EXPO_PUBLIC_CENTRAL_URL || 'https://www.dyuksa.com';
 // const IMS_URL = process.env.EXPO_PUBLIC_IMS_URL || 'http://172.24.246.68:8000';
@@ -95,10 +97,6 @@ export const AuthApi = {
   },
   logout: async (refresh: string): Promise<void> => {
     await centralClient.post('/api/v1/auth/logout/', { refresh });
-  },
-  refresh: async (refresh: string): Promise<RefreshResponse> => {
-    const { data } = await centralClient.post<RefreshResponse>('/api/v1/auth/refresh/', { refresh });
-    return data;
   },
   forgotPassword: async (email: string): Promise<void> => {
     await centralClient.post('/api/v1/auth/forgot-password/', { email });
@@ -346,12 +344,6 @@ export const InvoiceApi = {
     return data.data ?? data;
   },
 
-  createFromOrder: async (payload: {
-    sales_order_id: number; invoice_date: string; due_date: string;
-  }): Promise<Invoice> => {
-    const { data } = await imsClient.post('/api/v1/invoices/from-order/', payload);
-    return data.data ?? data;
-  },
 
   recordPayment: async (invoiceId: number, payload: {
     amount: string; payment_date: string; method: string;
@@ -552,7 +544,11 @@ export const OrderApi = {
 
   generateInvoice: async (orderId: number): Promise<any> => {
     const today = new Date().toISOString().split('T')[0];
-    const due = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+    let dueDays = 30; // fallback if settings can't be loaded
+    try {
+      dueDays = (await InvoiceSettingsApi.getSettings()).default_due_days || 30;
+    } catch { /* keep fallback */ }
+    const due = new Date(Date.now() + dueDays * 86400000).toISOString().split('T')[0];
     const { data } = await imsClient.post('/api/v1/invoices/from-order/', {
       sales_order_id: orderId,
       invoice_date: today,
